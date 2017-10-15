@@ -3,8 +3,6 @@ from django.db.models.sql.constants import CURSOR
 
 
 class PrepareSQLCompiler(SQLCompiler):
-    prepare_statement_name = 'fooplan'
-
     def prepare_sql(self):
         sql, params = self.as_sql()
         arguments = []
@@ -13,7 +11,7 @@ class PrepareSQLCompiler(SQLCompiler):
             if not prepare_param:
                 continue
             arguments.append(prepare_param.field_type.db_type(self.connection))
-        prepare_statement = 'PREPARE %s (%s) AS' % (self.prepare_statement_name, ','.join(arguments))
+        prepare_statement = 'PREPARE %s (%s) AS' % (self.query.prepare_statement_name, ','.join(arguments))
         sql = '%s %s;' % (prepare_statement, sql)
         placeholders = tuple(i for i in range(1, len(params) + 1))
         sql_with_placeholders = sql.format(*placeholders)
@@ -32,4 +30,4 @@ class ExecutePrepareSQLCompiler(SQLCompiler):
         self.pre_sql_setup()
         prepare_params_values = self.query.prepare_params_values
         arguments = ','.join('%s' for _ in range(len(prepare_params_values)))
-        return 'execute fooplan(%s);' % arguments, list(prepare_params_values.values())
+        return 'execute %s(%s);' % (self.query.prepare_statement_name, arguments), list(prepare_params_values.values())

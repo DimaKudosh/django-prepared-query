@@ -2,9 +2,12 @@ from django.db.models import QuerySet
 from django.db import connections, transaction
 from .query import PrepareQuery, ExecutePrepareQuery
 from .params import BindParam
+from .utils import generate_random_string
 
 
 class PrepareQuerySet(QuerySet):
+    HASH_LENGTH = 20
+
     def __init__(self, *args, **kwargs):
         super(PrepareQuerySet, self).__init__(*args, **kwargs)
         if not isinstance(self.query, ExecutePrepareQuery):
@@ -12,7 +15,10 @@ class PrepareQuerySet(QuerySet):
         self.prepared = False
         self.prepare_placeholders = []
 
-    def prepare(self):
+    def _generate_prepare_statement_name(self):
+        return '%s_%s' % (self.model._meta.model_name, generate_random_string(self.HASH_LENGTH))
+
+    def prepare(self, name=None):
         assert self.query.can_filter(), 'Cannot update a query once a slice has been taken.'
         query = self.query.clone(klass=PrepareQuery)
         for filter_param in query.where.children:
@@ -25,6 +31,7 @@ class PrepareQuerySet(QuerySet):
         for name, prepare_param in query.prepare_params_by_name.items():
             if not prepare_param.field_type:
                 raise Exception('Field type is required for %s' % name)
+        query.set_prepare_statement_name(self._generate_prepare_statement_name())
         with transaction.atomic(using=self.db, savepoint=False):
             query.get_prepare_compiler(self.db).execute_sql()
         self.prepared = True

@@ -1,6 +1,5 @@
-import random
-import string
 from django.db.models import Value, Expression
+from .utils import generate_random_string
 
 
 class BindParam(Expression):
@@ -9,7 +8,7 @@ class BindParam(Expression):
     def __init__(self, name, field_type=None):
         self.name = name
         self.field_type = field_type
-        self.hash = ''.join(random.choice(string.ascii_letters) for _ in range(self.HASH_LENGTH))
+        self.hash = generate_random_string(self.HASH_LENGTH)
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, self.name)
