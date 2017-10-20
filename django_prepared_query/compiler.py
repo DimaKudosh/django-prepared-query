@@ -1,5 +1,6 @@
 from django.db.models.sql.compiler import SQLCompiler
 from django.db.models.sql.constants import CURSOR
+from .operations import PreparedOperationsFactory
 
 
 class PrepareSQLCompiler(SQLCompiler):
@@ -11,11 +12,11 @@ class PrepareSQLCompiler(SQLCompiler):
             if not prepare_param:
                 continue
             arguments.append(prepare_param.field_type.db_type(self.connection))
-        prepare_statement = 'PREPARE %s (%s) AS' % (self.query.prepare_statement_name, ','.join(arguments))
-        sql = '%s %s;' % (prepare_statement, sql)
-        placeholders = tuple(i for i in range(1, len(params) + 1))
-        sql_with_placeholders = sql.format(*placeholders)
-        print(sql_with_placeholders)
+        prepared_operations = PreparedOperationsFactory.create(self.connection.vendor)
+        prepare_statement = prepared_operations.prepare_sql(name=self.query.prepare_statement_name,
+                                                            arguments=arguments, sql=sql)
+        placeholders = tuple(prepared_operations.prepare_placeholder(i) for i in range(1, len(params) + 1))
+        sql_with_placeholders = prepare_statement.format(*placeholders)
         return sql_with_placeholders, ()
 
     def execute_sql(self, result_type=CURSOR, chunked_fetch=False):

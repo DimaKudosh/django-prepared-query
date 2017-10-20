@@ -1,3 +1,4 @@
+from collections import defaultdict
 from django.db.models import QuerySet
 from django.db import connections, transaction
 from .query import PrepareQuery, ExecutePrepareQuery
@@ -18,8 +19,23 @@ class PrepareQuerySet(QuerySet):
     def _generate_prepare_statement_name(self):
         return '%s_%s' % (self.model._meta.model_name, generate_random_string(self.HASH_LENGTH))
 
-    def prepare(self, name=None):
-        assert self.query.can_filter(), 'Cannot update a query once a slice has been taken.'
+    def _execute_prepare(self):
+        connection = connections[self.db]
+        query = self.query
+        name = query.prepare_statement_name
+        prepared_statements = getattr(connection, 'prepared_statements', None)
+        if prepared_statements is None:
+            prepared_statements = {}
+        if name not in prepared_statements or prepared_statements[name] != connection.connection:
+            query = query.clone(klass=PrepareQuery)
+            query.get_prepare_compiler(self.db).execute_sql()
+            prepared_statements[name] = connection.connection
+        setattr(connection, 'prepared_statements', prepared_statements)
+        self.query = query.clone(klass=ExecutePrepareQuery)
+        return self
+
+    def prepare(self):
+        assert self.query.can_filter(), 'Cannot prepare a query once a slice has been taken.'
         query = self.query.clone(klass=PrepareQuery)
         for filter_param in query.where.children:
             expression = filter_param.rhs
@@ -32,19 +48,19 @@ class PrepareQuerySet(QuerySet):
             if not prepare_param.field_type:
                 raise Exception('Field type is required for %s' % name)
         query.set_prepare_statement_name(self._generate_prepare_statement_name())
-        with transaction.atomic(using=self.db, savepoint=False):
-            query.get_prepare_compiler(self.db).execute_sql()
+        self.query = query
         self.prepared = True
-        self.query = query.clone(klass=ExecutePrepareQuery)
         return self
 
     def execute(self, **kwargs):
         if not self.prepared:
             raise Exception('Prepare statement not created!')
+        self.query.set_prepare_statement_name(self._generate_prepare_statement_name())
         params = set(kwargs.keys())
         prepare_params = set(self.query.prepare_params_by_name.keys())
         if params != prepare_params:
             raise Exception('Incorrect params')
+        self._execute_prepare()
         self.query.prepare_params_values = kwargs
         qs = self._clone()
         return list(qs)
