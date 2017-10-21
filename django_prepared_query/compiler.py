@@ -36,8 +36,10 @@ class ExecutePrepareSQLCompiler(SQLCompiler):
         self.pre_sql_setup()
         prepare_params_values = self.query.prepare_params_values
         params_order = self.query.prepare_params_order
-        arguments = ','.join('%s' for _ in range(len(params_order)))
         params = []
         for param_name in params_order:
             params.append(prepare_params_values[param_name])
-        return 'execute %s(%s);' % (self.query.prepare_statement_name, arguments), params
+        prepared_operations = PreparedOperationsFactory.create(self.connection.vendor)
+        execute_statement = prepared_operations.execute_sql(name=self.query.prepare_statement_name,
+                                                            arguments=params_order)
+        return execute_statement, params

@@ -5,6 +5,9 @@ class PreparedOperations:
     def prepare_sql(self, name, arguments, sql):
         raise NotImplementedError
 
+    def execute_sql(self, name, arguments):
+        raise NotImplementedError
+
     def prepare_placeholder(self, index):
         raise NotImplementedError
 
@@ -12,6 +15,10 @@ class PreparedOperations:
 class PostgresqlPreparedOperations(PreparedOperations):
     def prepare_sql(self, name, arguments, sql):
         return 'PREPARE %s (%s) AS %s;' % (name, ','.join(arguments), sql)
+
+    def execute_sql(self, name, arguments):
+        arguments = ','.join('%s' for _ in range(len(arguments)))
+        return 'EXECUTE %s(%s);' % (name, arguments)
 
     def prepare_placeholder(self, index):
         return '$%d' % index
