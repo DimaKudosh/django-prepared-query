@@ -2,7 +2,7 @@ from django.db.models import QuerySet
 from django.db import connections
 from .query import PrepareQuery, ExecutePrepareQuery
 from .params import BindParam
-from .utils import generate_random_string
+from .utils import generate_random_string, get_where_nodes
 
 
 class PrepareQuerySet(QuerySet):
@@ -35,17 +35,17 @@ class PrepareQuerySet(QuerySet):
 
     def prepare(self):
         assert self.query.can_filter(), 'Cannot prepare a query once a slice has been taken.'
-        query = self.query.clone(klass=PrepareQuery)
-        for filter_param in query.where.children:
+        for filter_param in get_where_nodes(self.query):
             expression = filter_param.rhs
             if not isinstance(expression, BindParam):
                 continue
-            prepare_param = query.prepare_params_by_name[expression.name]
+            prepare_param = self.query.prepare_params_by_name[expression.name]
             if not prepare_param.field_type:
                 prepare_param.field_type = filter_param.lhs.output_field
-        for name, prepare_param in query.prepare_params_by_name.items():
+        for name, prepare_param in self.query.prepare_params_by_name.items():
             if not prepare_param.field_type:
                 raise Exception('Field type is required for %s' % name)
+        query = self.query.clone(klass=PrepareQuery)
         query.set_prepare_statement_name(self._generate_prepare_statement_name())
         self.query = query
         self.prepared = True
