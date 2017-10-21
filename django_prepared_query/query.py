@@ -8,6 +8,7 @@ class PrepareQuery(Query):
         super(PrepareQuery, self).__init__(*args, **kwargs)
         self.prepare_params_by_name = {}
         self.prepare_params_by_hash = {}
+        self.prepare_params_order = []
         self.prepare_statement_name = ''
         self.prepare_statement_sql = None
         self.prepare_statement_sql_params = ()
@@ -23,6 +24,7 @@ class PrepareQuery(Query):
         query = super(PrepareQuery, self).clone(klass=klass, memo=memo, **kwargs)
         query.prepare_params_by_name = self.prepare_params_by_name
         query.prepare_params_by_hash = self.prepare_params_by_hash
+        query.prepare_params_order = self.prepare_params_order
         query.prepare_statement_name = self.prepare_statement_name
         query.prepare_statement_sql = self.prepare_statement_sql
         query.prepare_statement_sql_params = self.prepare_statement_sql_params
@@ -31,6 +33,7 @@ class PrepareQuery(Query):
     def add_prepare_param(self, prepare_param):
         self.prepare_params_by_name[prepare_param.name] = prepare_param
         self.prepare_params_by_hash[prepare_param.hash] = prepare_param
+        self.prepare_params_order.append(prepare_param.name)
 
     def get_prepare_compiler(self, using=None, connection=None):
         if using is None and connection is None:
@@ -47,10 +50,7 @@ class ExecutePrepareQuery(PrepareQuery):
 
     def clone(self, klass=None, memo=None, **kwargs):
         query = super(ExecutePrepareQuery, self).clone(klass=klass, memo=memo, **kwargs)
-        query.prepare_params_by_name = self.prepare_params_by_name
-        query.prepare_params_by_hash = self.prepare_params_by_hash
         query.prepare_params_values = self.prepare_params_values
-        query.prepare_statement_name = self.prepare_statement_name
         return query
 
     def get_compiler(self, using=None, connection=None):

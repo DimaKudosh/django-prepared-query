@@ -8,9 +8,9 @@ from .utils import generate_random_string
 class PrepareQuerySet(QuerySet):
     HASH_LENGTH = 20
 
-    def __init__(self, *args, **kwargs):
-        super(PrepareQuerySet, self).__init__(*args, **kwargs)
-        if not isinstance(self.query, ExecutePrepareQuery):
+    def __init__(self, model=None, query=None, using=None, hints=None):
+        super(PrepareQuerySet, self).__init__(model=model, query=query, using=using, hints=hints)
+        if not query and not isinstance(self.query, ExecutePrepareQuery):
             self.query = PrepareQuery(self.model)
         self.prepared = False
         self.prepare_placeholders = []
@@ -55,7 +55,7 @@ class PrepareQuerySet(QuerySet):
         if not self.prepared:
             raise Exception('Prepare statement not created!')
         params = set(kwargs.keys())
-        prepare_params = set(self.query.prepare_params_by_name.keys())
+        prepare_params = set(self.query.prepare_params_order)
         if params != prepare_params:
             raise Exception('Incorrect params')
         self._execute_prepare()
