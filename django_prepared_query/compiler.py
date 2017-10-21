@@ -5,6 +5,8 @@ from .operations import PreparedOperationsFactory
 
 class PrepareSQLCompiler(SQLCompiler):
     def prepare_sql(self):
+        if self.query.prepare_statement_sql:
+            return self.query.prepare_statement_sql, self.query.prepare_statement_sql_params
         sql, params = self.as_sql()
         arguments = []
         for param in params:
@@ -17,7 +19,9 @@ class PrepareSQLCompiler(SQLCompiler):
                                                             arguments=arguments, sql=sql)
         placeholders = tuple(prepared_operations.prepare_placeholder(i) for i in range(1, len(params) + 1))
         sql_with_placeholders = prepare_statement.format(*placeholders)
-        return sql_with_placeholders, ()
+        params = ()
+        self.query.set_prepare_statement_sql(sql_with_placeholders, ())
+        return sql_with_placeholders, params
 
     def execute_sql(self, result_type=CURSOR, chunked_fetch=False):
         with self.connection.cursor() as cursor:

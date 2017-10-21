@@ -1,6 +1,5 @@
-from collections import defaultdict
 from django.db.models import QuerySet
-from django.db import connections, transaction
+from django.db import connections
 from .query import PrepareQuery, ExecutePrepareQuery
 from .params import BindParam
 from .utils import generate_random_string
@@ -55,7 +54,6 @@ class PrepareQuerySet(QuerySet):
     def execute(self, **kwargs):
         if not self.prepared:
             raise Exception('Prepare statement not created!')
-        self.query.set_prepare_statement_name(self._generate_prepare_statement_name())
         params = set(kwargs.keys())
         prepare_params = set(self.query.prepare_params_by_name.keys())
         if params != prepare_params:

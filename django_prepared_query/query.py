@@ -9,15 +9,23 @@ class PrepareQuery(Query):
         self.prepare_params_by_name = {}
         self.prepare_params_by_hash = {}
         self.prepare_statement_name = ''
+        self.prepare_statement_sql = None
+        self.prepare_statement_sql_params = ()
 
     def set_prepare_statement_name(self, name):
         self.prepare_statement_name = name
+
+    def set_prepare_statement_sql(self, sql, params):
+        self.prepare_statement_sql = sql
+        self.prepare_statement_sql_params = params
 
     def clone(self, klass=None, memo=None, **kwargs):
         query = super(PrepareQuery, self).clone(klass=klass, memo=memo, **kwargs)
         query.prepare_params_by_name = self.prepare_params_by_name
         query.prepare_params_by_hash = self.prepare_params_by_hash
         query.prepare_statement_name = self.prepare_statement_name
+        query.prepare_statement_sql = self.prepare_statement_sql
+        query.prepare_statement_sql_params = self.prepare_statement_sql_params
         return query
 
     def add_prepare_param(self, prepare_param):
