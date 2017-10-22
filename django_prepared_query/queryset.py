@@ -17,6 +17,13 @@ class PrepareQuerySet(QuerySet):
         self.prepared = False
         self.prepare_placeholders = []
 
+    def __repr__(self):
+        if self.prepared:
+            prepare_query = self.query.prepare_statement_sql % self.query.prepare_statement_sql_params
+            arguments = self.query.prepare_params_order
+            return 'PrepareQuerySet <%s (%s)>' % (prepare_query, ', '.join(arguments))
+        return super(PrepareQuerySet, self).__repr__()
+
     def _generate_prepare_statement_name(self):
         return '%s_%s' % (self.model._meta.model_name, generate_random_string(self.HASH_LENGTH))
 

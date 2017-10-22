@@ -50,3 +50,8 @@ class PreparedStatementsTestCase(TestCase):
         ).order_by('gender').values_list('is_specified_gender', flat=True).prepare()
         is_female = prepared_qs.execute(gender='f')
         self.assertListEqual(is_female, [True, False, False, False])
+
+    def test_prepare_queryset_representation(self):
+        prepared_qs = Author.objects.prepare()
+        representation = repr(prepared_qs)
+        self.assertTrue(representation.startswith('PrepareQuerySet'))
