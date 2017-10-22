@@ -8,3 +8,7 @@ class QueryNotPrepared(PreparedStatementException):
 
 class IncorrectBindParameter(PreparedStatementException):
     pass
+
+
+class OperationOnPreparedStatement(PreparedStatementException):
+    pass
