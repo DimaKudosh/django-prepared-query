@@ -14,11 +14,16 @@ class PreparedOperations:
 
 class PostgresqlPreparedOperations(PreparedOperations):
     def prepare_sql(self, name, arguments, sql):
-        return 'PREPARE %s (%s) AS %s;' % (name, ','.join(arguments), sql)
+        arguments_sql = ''
+        if arguments:
+            arguments_sql = '(%s)' % ','.join(arguments)
+        return 'PREPARE %s %s AS %s;' % (name, arguments_sql, sql)
 
     def execute_sql(self, name, arguments):
-        arguments = ','.join('%s' for _ in range(len(arguments)))
-        return 'EXECUTE %s(%s);' % (name, arguments)
+        arguments_sql = ''
+        if arguments:
+            arguments_sql = '(%s)' % ','.join('%s' for _ in range(len(arguments)))
+        return 'EXECUTE %s%s;' % (name, arguments_sql)
 
     def prepare_placeholder(self, index):
         return '$%d' % index

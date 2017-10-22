@@ -50,3 +50,8 @@ class PreparedStatementsTestCase(TestCase):
         ).order_by('gender').values_list('is_specified_gender', flat=True).prepare()
         is_female = prepared_qs.execute(gender='f')
         self.assertListEqual(is_female, [True, False, False, False])
+
+    def test_prepare_without_params(self):
+        prepared_qs = Author.objects.order_by('name').prepare()
+        expected_result = list(Author.objects.order_by('name').all())
+        self.assertListEqual(prepared_qs.execute(), expected_result)
