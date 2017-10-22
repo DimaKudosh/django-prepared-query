@@ -12,3 +12,7 @@ class IncorrectBindParameter(PreparedStatementException):
 
 class OperationOnPreparedStatement(PreparedStatementException):
     pass
+
+
+class NotSupportedLookup(PreparedStatementException):
+    pass

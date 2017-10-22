@@ -1,10 +1,12 @@
+from collections import Sequence
 from django.db.models import QuerySet
 from django.db import connections
+from django.db.models.lookups import IsNull, In
 from .query import PrepareQuery, ExecutePrepareQuery
 from .params import BindParam
 from .utils import generate_random_string, get_where_nodes
 from .exceptions import PreparedStatementException, QueryNotPrepared, IncorrectBindParameter, \
-    OperationOnPreparedStatement
+    OperationOnPreparedStatement, NotSupportedLookup
 
 
 class PrepareQuerySet(QuerySet):
@@ -78,12 +80,17 @@ class PrepareQuerySet(QuerySet):
     def prepare(self):
         assert self.query.can_filter(), 'Cannot prepare a query once a slice has been taken.'
         for filter_param in get_where_nodes(self.query):
-            expression = filter_param.rhs
-            if not isinstance(expression, BindParam):
-                continue
-            prepare_param = self.query.prepare_params_by_name[expression.name]
-            if not prepare_param.field_type:
-                prepare_param.field_type = filter_param.lhs.output_field
+            if isinstance(filter_param, (IsNull, In)):
+                raise NotSupportedLookup('%s lookup isn\'t supported in prepared statements' % filter_param.lookup_name)
+            expressions_list = filter_param.rhs
+            if not isinstance(expressions_list, Sequence):
+                expressions_list = [expressions_list]
+            for expression in expressions_list:
+                if not isinstance(expression, BindParam):
+                    continue
+                prepare_param = self.query.prepare_params_by_name[expression.name]
+                if not prepare_param.field_type:
+                    prepare_param.field_type = filter_param.lhs.output_field
         for name, prepare_param in self.query.prepare_params_by_name.items():
             if not prepare_param.field_type:
                 raise PreparedStatementException('Field type is required for %s' % name)

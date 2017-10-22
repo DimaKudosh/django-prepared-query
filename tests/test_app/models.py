@@ -11,6 +11,7 @@ class Author(models.Model):
     name = models.CharField(max_length=100)
     age = models.IntegerField()
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class Publisher(models.Model):

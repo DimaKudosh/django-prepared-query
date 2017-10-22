@@ -11,11 +11,12 @@ class PrepareSQLCompiler(SQLCompiler):
         arguments = []
         fixed_sql_params = []
         for param in params:
-            prepare_param = self.query.prepare_params_by_hash.get(param)
-            if not prepare_param:
+            for prepare_param in self.query.prepare_params_by_name.values():
+                if isinstance(param, str) and prepare_param.hash in param:
+                    arguments.append(prepare_param.field_type.db_type(self.connection))
+                    break
+            else:
                 fixed_sql_params.append(param)
-                continue
-            arguments.append(prepare_param.field_type.db_type(self.connection))
         prepared_operations = PreparedOperationsFactory.create(self.connection.vendor)
         prepare_statement = prepared_operations.prepare_sql(name=self.query.prepare_statement_name,
                                                             arguments=arguments, sql=sql)
