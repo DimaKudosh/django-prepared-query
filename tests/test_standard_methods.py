@@ -8,6 +8,36 @@ class PreparedStatementsTestCase(TestCase):
     def setUp(self):
         self.prepared_qs = Author.objects.prepare()
 
+    def test_prepare_queryset_representation(self):
+        representation = repr(self.prepared_qs)
+        self.assertTrue(representation.startswith('PrepareQuerySet'))
+
+    def test_iter_on_prepared_statement(self):
+        with self.assertRaises(OperationOnPreparedStatement):
+            list(self.prepared_qs)
+
+    def test_len_on_prepared_statement(self):
+        with self.assertRaises(OperationOnPreparedStatement):
+            len(self.prepared_qs)
+
+    def test_bool_on_prepared_statement(self):
+        with self.assertRaises(OperationOnPreparedStatement):
+            bool(self.prepared_qs)
+
+    def test_getitem_on_prepared_statement(self):
+        with self.assertRaises(OperationOnPreparedStatement):
+            item = self.prepared_qs[0]
+
+    def test_and_on_prepared_statement(self):
+        another = Author.objects.prepare()
+        with self.assertRaises(OperationOnPreparedStatement):
+            self.prepared_qs & another
+
+    def test_or_on_prepared_statement(self):
+        another = Author.objects.prepare()
+        with self.assertRaises(OperationOnPreparedStatement):
+            self.prepared_qs | another
+
     def test_all_on_prepared_statement(self):
         with self.assertRaises(OperationOnPreparedStatement):
             self.prepared_qs.all()

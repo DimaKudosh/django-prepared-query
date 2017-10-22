@@ -24,6 +24,39 @@ class PrepareQuerySet(QuerySet):
             return 'PrepareQuerySet <%s (%s)>' % (prepare_query, ', '.join(arguments))
         return super(PrepareQuerySet, self).__repr__()
 
+    def __iter__(self):
+        if self.prepared:
+            raise OperationOnPreparedStatement('PreparedQuerySet object is not iterable')
+        return self._base_iter()
+
+    def __len__(self):
+        if self.prepared:
+            raise OperationOnPreparedStatement('PreparedQuerySet object has no len()')
+        return super(PrepareQuerySet, self).__len__()
+
+    def __bool__(self):
+        if self.prepared:
+            raise OperationOnPreparedStatement('PreparedQuerySet can\'t be fetched without calling execute method')
+        return super(PrepareQuerySet, self).__bool__()
+
+    def __getitem__(self, item):
+        if self.prepared:
+            raise OperationOnPreparedStatement('PreparedQuerySet can\'t be fetched without calling execute method')
+        return super(PrepareQuerySet, self).__getitem__(item)
+
+    def __and__(self, other):
+        if self.prepared:
+            raise OperationOnPreparedStatement('AND not allowed on prepared statement')
+        return super(PrepareQuerySet, self).__and__(other)
+
+    def __or__(self, other):
+        if self.prepared:
+            raise OperationOnPreparedStatement('OR not allowed on prepared statement')
+        return super(PrepareQuerySet, self).__or__(other)
+
+    def _base_iter(self):
+        return super(PrepareQuerySet, self).__iter__()
+
     def _generate_prepare_statement_name(self):
         return '%s_%s' % (self.model._meta.model_name, generate_random_string(self.HASH_LENGTH))
 
@@ -71,7 +104,7 @@ class PrepareQuerySet(QuerySet):
         self._execute_prepare()
         self.query.prepare_params_values = kwargs
         qs = self._clone()
-        return list(qs)
+        return list(qs._base_iter())
 
     def iterator(self):
         if self.prepared:
