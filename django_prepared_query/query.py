@@ -33,7 +33,8 @@ class PrepareQuery(Query):
     def add_prepare_param(self, prepare_param):
         self.prepare_params_by_name[prepare_param.name] = prepare_param
         self.prepare_params_by_hash[prepare_param.hash] = prepare_param
-        self.prepare_params_order.append(prepare_param.name)
+        if prepare_param.name not in self.prepare_params_order:
+            self.prepare_params_order.append(prepare_param.name)
 
     def get_prepare_compiler(self, using=None, connection=None):
         if using is None and connection is None:
