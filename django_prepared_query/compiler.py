@@ -1,5 +1,6 @@
 from django.db.models.sql.compiler import SQLCompiler
 from django.db.models.sql.constants import CURSOR
+from django.db.models import AutoField, BigAutoField, IntegerField, BigIntegerField
 from .operations import PreparedOperationsFactory
 
 
@@ -13,7 +14,12 @@ class PrepareSQLCompiler(SQLCompiler):
         for param in params:
             for prepare_param in self.query.prepare_params_by_name.values():
                 if isinstance(param, str) and prepare_param.hash in param:
-                    arguments.append(prepare_param.field_type.db_type(self.connection))
+                    field = prepare_param.field_type
+                    if isinstance(field, AutoField):
+                        field = IntegerField()
+                    elif isinstance(field, BigAutoField):
+                        field = BigIntegerField()
+                    arguments.append(field.db_type(self.connection))
                     break
             else:
                 fixed_sql_params.append(param)

@@ -1,7 +1,8 @@
 from collections import Sequence
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Model
 from django.db import connections
 from django.db.models.lookups import IsNull, In
+from django.core.exceptions import ValidationError
 from .query import PrepareQuery, ExecutePrepareQuery
 from .params import BindParam
 from .utils import generate_random_string, get_where_nodes
@@ -108,6 +109,16 @@ class PrepareQuerySet(QuerySet):
         prepare_params = set(self.query.prepare_params_order)
         if params != prepare_params:
             raise IncorrectBindParameter('Incorrect params')
+        for key, val in kwargs.items():
+            field = self.query.prepare_params_by_name[key].field_type
+            if isinstance(val, Model):
+                val = val._get_pk_val()
+            try:
+                val = field.get_prep_value(val)
+            except:
+                raise ValidationError('%s is incorrect type for %s parameter' % (val, key))
+            field.run_validators(val)
+            kwargs[key] = val
         self._execute_prepare()
         self.query.prepare_params_values = kwargs
         qs = self._clone()

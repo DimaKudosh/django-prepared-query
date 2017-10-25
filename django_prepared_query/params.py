@@ -1,4 +1,4 @@
-from django.db.models import Value, Expression
+from django.db.models import Expression
 from .utils import generate_random_string
 
 
@@ -9,8 +9,10 @@ class BindParam(Expression):
         super(BindParam, self).__init__(None)
         self.name = name
         self.field_type = field_type
-        if self.field_type and not self.field_type.max_length:
-            self.field_type.max_length = 256
+        if self.field_type:
+            self.field_type.validators = []  # Disable validation for user specified field types
+            if not self.field_type.max_length:
+                self.field_type.max_length = 256
         self.hash = generate_random_string(self.HASH_LENGTH)
 
     def __repr__(self):

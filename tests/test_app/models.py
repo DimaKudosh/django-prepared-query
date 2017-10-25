@@ -29,3 +29,37 @@ class Book(models.Model):
     authors = models.ManyToManyField(Author)
     publisher = models.ForeignKey(Publisher, on_delete=models.CASCADE)
     pubdate = models.DateField()
+
+
+class BigAutoModel(models.Model):
+    objects = PrepareManager()
+    id = models.BigAutoField(primary_key=True)
+
+
+class AllFieldsModel(models.Model):
+    objects = PrepareManager()
+    big_int = models.BigIntegerField()
+    binary = models.BinaryField()
+    boolean = models.BooleanField()
+    char = models.CharField(max_length=8)
+    date = models.DateField()
+    datetime = models.DateTimeField()
+    decimal = models.DecimalField(max_digits=5, decimal_places=2)
+    duration = models.DurationField()
+    email = models.EmailField()
+    file = models.FileField()
+    file_path = models.FilePathField()
+    float = models.FloatField()
+    image = models.ImageField()
+    int = models.IntegerField()
+    generic_ip_address = models.GenericIPAddressField()
+    null_boolean = models.NullBooleanField()
+    positive_int = models.PositiveIntegerField()
+    positive_small_int = models.PositiveSmallIntegerField()
+    slug = models.SlugField()
+    small_int = models.SmallIntegerField()
+    text = models.TextField()
+    time = models.TimeField()
+    url = models.URLField()
+    uuid = models.UUIDField()
+    foreign_key = models.ForeignKey(BigAutoModel)
