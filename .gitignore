@@ -1,2 +1,4 @@
 .idea
 *.pyc
+demo/.ipynb_checkpoints
+demo/data

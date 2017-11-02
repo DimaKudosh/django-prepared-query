@@ -1,0 +1,21 @@
+version: '2'
+
+services:
+  web:
+    restart: always
+    build:
+      context: ../
+      dockerfile: demo/configs/uwsgi/Dockerfile
+    env_file: configs/env
+    ports:
+      - "8000:8000"
+    links:
+      - postgres:postgres
+
+  postgres:
+    restart: always
+    image: postgres:latest
+    expose:
+      - "5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data

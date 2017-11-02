@@ -1,0 +1,5 @@
+DB_NAME=django_prepared_query
+DB_USER=postgres
+DB_PASS=
+DB_SERVICE=postgres
+DB_PORT=5432

@@ -1,0 +1,7 @@
+Django==1.10.7
+djangorestframework==3.7.0
+django-extensions==1.9.6
+psycopg2==2.7.3.1
+mixer==5.6.6
+ipython
+jupyter

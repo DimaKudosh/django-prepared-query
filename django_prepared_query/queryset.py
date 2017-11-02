@@ -74,7 +74,7 @@ class PrepareQuerySet(QuerySet):
             query = query.clone(klass=PrepareQuery)
             query.get_prepare_compiler(self.db).execute_sql()
             prepared_statements[name] = connection.connection
-        setattr(connection, 'prepared_statements', prepared_statements)
+            setattr(connection, 'prepared_statements', prepared_statements)
         self.query = query.clone(klass=ExecutePrepareQuery)
         return self
 
