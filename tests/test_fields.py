@@ -216,6 +216,9 @@ class FieldsTestCase(TestCase):
 
     @staticmethod
     def test_foreign_key():
+        '''
+        Django doesn't validate foreign key field, so it's just smoke test
+        '''
         qs = AllFieldsModel.objects.filter(foreign_key=BindParam('foreign_key')).prepare()
         m = BigAutoModel.objects.create()
         qs.execute(foreign_key=m.id)

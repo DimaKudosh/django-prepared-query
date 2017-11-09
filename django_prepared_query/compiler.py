@@ -15,10 +15,10 @@ class PrepareSQLCompiler(SQLCompiler):
             for prepare_param in self.query.prepare_params_by_name.values():
                 if isinstance(param, str) and prepare_param.hash in param:
                     field = prepare_param.field_type
-                    if isinstance(field, AutoField):
-                        field = IntegerField()
-                    elif isinstance(field, BigAutoField):
+                    if isinstance(field, BigAutoField):
                         field = BigIntegerField()
+                    elif isinstance(field, AutoField):
+                        field = IntegerField()
                     arguments.append(field.db_type(self.connection))
                     break
             else:

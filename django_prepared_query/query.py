@@ -37,7 +37,7 @@ class PrepareQuery(Query):
             self.prepare_params_order.append(prepare_param.name)
 
     def get_prepare_compiler(self, using=None, connection=None):
-        if using is None and connection is None:
+        if using is None and connection is None:  # pragma: no cover
             raise ValueError("Need either using or connection")
         if using:
             connection = connections[using]
@@ -45,7 +45,7 @@ class PrepareQuery(Query):
 
 
 class ExecutePrepareQuery(PrepareQuery):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):  # pragma: no cover
         super(PrepareQuery, self).__init__(*args, **kwargs)
         self.prepare_params_values = {}
 
@@ -55,7 +55,7 @@ class ExecutePrepareQuery(PrepareQuery):
         return query
 
     def get_compiler(self, using=None, connection=None):
-        if using is None and connection is None:
+        if using is None and connection is None:  # pragma: no cover
             raise ValueError("Need either using or connection")
         if using:
             connection = connections[using]

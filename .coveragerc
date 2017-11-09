@@ -11,5 +11,6 @@ exclude_lines =
   # Don't complain if tests don't hit defensive assertion code:
   raise AssertionError
   raise NotImplementedError
+  raise ImproperlyConfigured
 
 show_missing = True

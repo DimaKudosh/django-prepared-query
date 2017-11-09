@@ -1,6 +1,7 @@
+from datetime import date
 from django.test import TestCase
 from django.db.models import Case, When, CharField, BooleanField
-from test_app.models import Author
+from test_app.models import Author, Publisher, Book
 from django_prepared_query import BindParam, QueryNotPrepared, IncorrectBindParameter, PreparedStatementException
 
 
@@ -8,8 +9,12 @@ class PreparedStatementsTestCase(TestCase):
     def setUp(self):
         Author.objects.create(name='Kazuo Ishiguro', age=50, gender='m')
         Author.objects.create(name='Bob Dylan', age=50, gender='m')
-        Author.objects.create(name='Svetlana Alexievich', age=50, gender='f')
+        author = Author.objects.create(name='Svetlana Alexievich', age=50, gender='f')
         Author.objects.create(name='Patrick Modiano', age=50, gender='m')
+        publisher = Publisher.objects.create(name='Test Publisher', num_awards=43)
+        book = Book.objects.create(name='The Unwomanly Face of War', pages=300, price='200.00', rating=4.65,
+                            publisher=publisher, pubdate=date.today())
+        book.authors.add(author)
 
     def test_execute_on_not_prepared_statement(self):
         qs = Author.objects.all()
@@ -55,3 +60,26 @@ class PreparedStatementsTestCase(TestCase):
         prepared_qs = Author.objects.order_by('name').prepare()
         expected_result = list(Author.objects.order_by('name').all())
         self.assertListEqual(prepared_qs.execute(), expected_result)
+
+    def test_prepare_values_list(self):
+        prepared_qs = Author.objects.values_list('name', flat=True).order_by('name').prepare()
+        expected_result = list(Author.objects.values_list('name', flat=True).order_by('name'))
+        self.assertListEqual(prepared_qs.execute(), expected_result)
+
+    def test_prepare_values(self):
+        prepared_qs = Author.objects.values('name').order_by('name').prepare()
+        expected_result = list(Author.objects.values('name').order_by('name'))
+        self.assertListEqual(prepared_qs.execute(), expected_result)
+
+    def test_select_related(self):
+        prepared_qs = Book.objects.select_related('publisher').prepare()
+        with self.assertNumQueries(2):  # Prepare and execute
+            book = prepared_qs.execute()[0]
+            publisher = book.publisher
+
+    def test_prefetch_related(self):
+        author_name = 'Svetlana Alexievich'
+        prepared_qs = Author.objects.filter(name=author_name).prefetch_related('books').prepare()
+        with self.assertNumQueries(3):  # Prepare, execute and prefetch query
+            author = prepared_qs.execute()[0]
+        self.assertEqual(author.books.count(), 1)
