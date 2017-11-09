@@ -1,0 +1,15 @@
+[run]
+include = django_prepared_query/*
+
+[report]
+exclude_lines =
+  pragma: no cover
+
+  # Don't complain about missing debug-only code:
+  def __repr__
+
+  # Don't complain if tests don't hit defensive assertion code:
+  raise AssertionError
+  raise NotImplementedError
+
+show_missing = True
