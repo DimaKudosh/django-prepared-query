@@ -151,7 +151,7 @@ class FieldsTestCase(TestCase):
         qs.execute(int=123)
         qs.execute(int='123')
         with self.assertRaises(ValidationError):
-            qs.execute(int=2147483648)
+            qs.execute(int=4294967296)
         with self.assertRaises(ValidationError):
             qs.execute(int='text')
         with self.assertRaises(ValidationError):
@@ -162,7 +162,7 @@ class FieldsTestCase(TestCase):
         qs.execute(int=123)
         qs.execute(int='123')
         with self.assertRaises(ValidationError):
-            qs.execute(int=32768)
+            qs.execute(int=65536)
         with self.assertRaises(ValidationError):
             qs.execute(int='text')
         with self.assertRaises(ValidationError):

@@ -5,12 +5,17 @@ from django_prepared_query import BindParam, NotSupportedLookup
 
 
 class PreparedStatementsTestCase(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         created_date = datetime(year=2015, month=5, day=5, hour=5, minute=5, second=5)
         Author.objects.create(name='Kazuo Ishiguro', age=50, gender='m')
         Author.objects.create(name='Bob Dylan', age=51, gender='m')
         Author.objects.create(name='Svetlana Alexievich', age=52, gender='f', created_at=created_date)
         Author.objects.create(name='Patrick Modiano', age=53, gender='m')
+
+    @classmethod
+    def tearDownClass(cls):
+        Author.objects.delete()
 
     def test_exact_lookup(self):
         name = 'Svetlana Alexievich'

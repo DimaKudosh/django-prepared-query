@@ -6,7 +6,8 @@ from django_prepared_query import BindParam, QueryNotPrepared, IncorrectBindPara
 
 
 class PreparedStatementsTestCase(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         Author.objects.create(name='Kazuo Ishiguro', age=50, gender='m')
         Author.objects.create(name='Bob Dylan', age=50, gender='m')
         author = Author.objects.create(name='Svetlana Alexievich', age=50, gender='f')
@@ -15,6 +16,12 @@ class PreparedStatementsTestCase(TestCase):
         book = Book.objects.create(name='The Unwomanly Face of War', pages=300, price='200.00', rating=4.65,
                             publisher=publisher, pubdate=date.today())
         book.authors.add(author)
+
+    @classmethod
+    def tearDownClass(cls):
+        Author.objects.delete()
+        Book.objects.delete()
+        Publisher.objects.delete()
 
     def test_execute_on_not_prepared_statement(self):
         qs = Author.objects.all()
