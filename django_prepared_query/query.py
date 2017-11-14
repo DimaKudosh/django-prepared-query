@@ -1,6 +1,7 @@
 from django.db import connections
 from django.db.models.sql.query import Query
 from .compiler import PrepareSQLCompiler, ExecutePrepareSQLCompiler
+from .exceptions import IncorrectBindParameter
 
 
 class PrepareQuery(Query):
@@ -31,6 +32,10 @@ class PrepareQuery(Query):
         return query
 
     def add_prepare_param(self, prepare_param):
+        if prepare_param.hash in self.prepare_params_by_hash:
+            return
+        if prepare_param.name in self.prepare_params_by_name:
+            raise IncorrectBindParameter('\'%s\' parameter used multiple times' % prepare_param.name)
         self.prepare_params_by_name[prepare_param.name] = prepare_param
         self.prepare_params_by_hash[prepare_param.hash] = prepare_param
         if prepare_param.name not in self.prepare_params_order:

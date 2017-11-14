@@ -114,3 +114,7 @@ class PreparedStatementsTestCase(TestCase):
             Author.objects.all().prepare().execute()
         with self.assertNumQueries(1):
             Author.objects.all().prepare().execute()
+
+    def test_same_bind_param(self):
+        with self.assertRaises(IncorrectBindParameter):
+            Author.objects.filter(id=BindParam('param'), name=BindParam('param'))
