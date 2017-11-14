@@ -90,3 +90,27 @@ class PreparedStatementsTestCase(TestCase):
         with self.assertNumQueries(3):  # Prepare, execute and prefetch query
             author = prepared_qs.execute()[0]
         self.assertEqual(author.books.count(), 1)
+
+    def test_only(self):
+        author_name = 'Svetlana Alexievich'
+        prepared_qs = Author.objects.filter(name=author_name).only('id').prepare()
+        with self.assertNumQueries(2):  # Prepare, execute
+            author = prepared_qs.execute()[0]
+        with self.assertNumQueries(1):
+            author_id = author.id
+            author_name = author.name  # Deferred field must generate query
+
+    def test_defer(self):
+        author_name = 'Svetlana Alexievich'
+        prepared_qs = Author.objects.filter(name=author_name).defer('name').prepare()
+        with self.assertNumQueries(2):  # Prepare, execute
+            author = prepared_qs.execute()[0]
+        with self.assertNumQueries(1):
+            author_id = author.id
+            author_name = author.name  # Deferred field must generate query
+
+    def test_same_prepare(self):
+        with self.assertNumQueries(2):
+            Author.objects.all().prepare().execute()
+        with self.assertNumQueries(1):
+            Author.objects.all().prepare().execute()

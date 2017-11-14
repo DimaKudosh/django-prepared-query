@@ -1,3 +1,4 @@
+from hashlib import md5
 from django.db.models.sql.compiler import SQLCompiler
 from django.db.models.sql.constants import CURSOR, MULTI
 from django.db.models import AutoField, BigAutoField, IntegerField, BigIntegerField
@@ -5,10 +6,18 @@ from .operations import PreparedOperationsFactory
 
 
 class PrepareSQLCompiler(SQLCompiler):
+    def _generate_statement_name(self, sql):
+        sql_hash = md5(sql.encode()).hexdigest()
+        model_name = self.query.model._meta.model_name
+        name = '%s_%s' % (model_name, sql_hash)
+        self.query.prepare_statement_name = name
+        return name
+
     def prepare_sql(self):
         if self.query.prepare_statement_sql:
             return self.query.prepare_statement_sql, self.query.prepare_statement_sql_params
         sql, params = self.as_sql()
+        name = self._generate_statement_name(sql)
         arguments = []
         fixed_sql_params = []
         for param in params:
@@ -24,7 +33,7 @@ class PrepareSQLCompiler(SQLCompiler):
             else:
                 fixed_sql_params.append(param)
         prepared_operations = PreparedOperationsFactory.create(self.connection.vendor)
-        prepare_statement = prepared_operations.prepare_sql(name=self.query.prepare_statement_name,
+        prepare_statement = prepared_operations.prepare_sql(name=name,
                                                             arguments=arguments, sql=sql)
         placeholders = tuple(prepared_operations.prepare_placeholder(i) for i in range(1, len(arguments) + 1))
         sql_with_placeholders = prepare_statement.format(*placeholders)

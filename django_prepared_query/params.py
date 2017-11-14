@@ -1,10 +1,8 @@
+import random
 from django.db.models import Expression
-from .utils import generate_random_string
 
 
 class BindParam(Expression):
-    HASH_LENGTH = 20
-
     def __init__(self, name, field_type=None):
         super(BindParam, self).__init__(None)
         self.name = name
@@ -13,7 +11,7 @@ class BindParam(Expression):
             self.field_type.validators = []  # Disable validation for user specified field types
             if not self.field_type.max_length:
                 self.field_type.max_length = 256
-        self.hash = generate_random_string(self.HASH_LENGTH)
+        self.hash = '%032x' % random.getrandbits(128)
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, self.name)

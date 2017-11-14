@@ -5,14 +5,12 @@ from django.db.models.lookups import IsNull, In
 from django.core.exceptions import ValidationError
 from .query import PrepareQuery, ExecutePrepareQuery
 from .params import BindParam
-from .utils import generate_random_string, get_where_nodes
+from .utils import get_where_nodes
 from .exceptions import PreparedStatementException, QueryNotPrepared, IncorrectBindParameter, \
     OperationOnPreparedStatement, NotSupportedLookup
 
 
 class PrepareQuerySet(QuerySet):
-    HASH_LENGTH = 20
-
     def __init__(self, model=None, query=None, using=None, hints=None):
         super(PrepareQuerySet, self).__init__(model=model, query=query, using=using, hints=hints)
         if not query and not isinstance(self.query, ExecutePrepareQuery):
@@ -58,9 +56,6 @@ class PrepareQuerySet(QuerySet):
         if self.prepared:
             raise OperationOnPreparedStatement(msg)
 
-    def _generate_prepare_statement_name(self):
-        return '%s_%s' % (self.model._meta.model_name, generate_random_string(self.HASH_LENGTH))
-
     def _execute_prepare(self):
         connection = connections[self.db]
         query = self.query
@@ -94,7 +89,6 @@ class PrepareQuerySet(QuerySet):
             if not prepare_param.field_type:
                 raise PreparedStatementException('Field type is required for %s' % name)
         query = self.query.clone(klass=PrepareQuery)
-        query.set_prepare_statement_name(self._generate_prepare_statement_name())
         query.get_prepare_compiler(self.db).prepare_sql()
         self.query = query
         self.prepared = True

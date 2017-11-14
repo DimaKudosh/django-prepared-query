@@ -1,10 +1,4 @@
-import random
-import string
 from django.db.models.sql.where import WhereNode
-
-
-def generate_random_string(length):
-    return ''.join(random.choice(string.ascii_letters) for _ in range(length))
 
 
 def _traverse(node):
