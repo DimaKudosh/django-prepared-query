@@ -23,3 +23,6 @@ class BindParam(Expression):
         c = super(BindParam, self).resolve_expression(query, allow_joins, reuse, summarize, for_save)
         query.add_prepare_param(self)
         return c
+
+    def get_group_by_cols(self):
+        return []

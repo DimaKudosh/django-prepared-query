@@ -72,7 +72,7 @@ class PrepareQuerySet(QuerySet):
         return self
 
     def prepare(self):
-        assert self.query.can_filter(), 'Cannot prepare a query once a slice has been taken.'
+        # Set field types for BindParams
         for filter_param in get_where_nodes(self.query):
             if isinstance(filter_param, (IsNull, In)):
                 raise NotSupportedLookup('%s lookup isn\'t supported in prepared statements' % filter_param.lookup_name)
@@ -82,10 +82,10 @@ class PrepareQuerySet(QuerySet):
             for expression in expressions_list:
                 if not isinstance(expression, BindParam):
                     continue
-                prepare_param = self.query.prepare_params_by_name[expression.name]
+                prepare_param = self.query.prepare_params_by_hash[expression.hash]
                 if not prepare_param.field_type:
                     prepare_param.field_type = filter_param.lhs.output_field
-        for name, prepare_param in self.query.prepare_params_by_name.items():
+        for name, prepare_param in self.query.prepare_params_by_hash.items():
             if not prepare_param.field_type:
                 raise PreparedStatementException('Field type is required for %s' % name)
         query = self.query.clone(klass=PrepareQuery)
@@ -96,21 +96,23 @@ class PrepareQuerySet(QuerySet):
 
     def execute(self, **kwargs):
         if not self.prepared:
-            raise QueryNotPrepared('Prepare statement not created!')
+            raise QueryNotPrepared('Query isn\'t prepared!')
         params = set(kwargs.keys())
-        prepare_params = set(self.query.prepare_params_order)
-        if params != prepare_params:
+        if params != self.query.prepare_params_names:
             raise IncorrectBindParameter('Incorrect params')
-        for key, val in kwargs.items():
-            field = self.query.prepare_params_by_name[key].field_type
-            if isinstance(val, Model):
-                val = val._get_pk_val()
+        # validate input parameters
+        for prepare_param in self.query.prepare_params_by_hash.values():
+            field = prepare_param.field_type
+            name = prepare_param.name
+            param = kwargs.get(name)
+            if isinstance(param, Model):
+                param = param._get_pk_val()
             try:
-                val = field.get_prep_value(val)
+                param = field.get_prep_value(param)
             except:
-                raise ValidationError('%s is incorrect type for %s parameter' % (val, key))
-            field.run_validators(val)
-            kwargs[key] = val
+                raise ValidationError('%s is incorrect type for %s parameter' % (param, name))
+            field.run_validators(param)
+            kwargs[name] = param
         self._execute_prepare()
         self.query.prepare_params_values = kwargs
         qs = self._clone()

@@ -7,8 +7,8 @@ from .exceptions import IncorrectBindParameter
 class PrepareQuery(Query):
     def __init__(self, *args, **kwargs):
         super(PrepareQuery, self).__init__(*args, **kwargs)
-        self.prepare_params_by_name = {}
         self.prepare_params_by_hash = {}
+        self.prepare_params_names = set()
         self.prepare_params_order = []
         self.prepare_statement_name = ''
         self.prepare_statement_sql = None
@@ -21,10 +21,13 @@ class PrepareQuery(Query):
         self.prepare_statement_sql = sql
         self.prepare_statement_sql_params = params
 
+    def set_prepare_params_order(self, order):
+        self.prepare_params_order = order
+
     def clone(self, klass=None, memo=None, **kwargs):
         query = super(PrepareQuery, self).clone(klass=klass, memo=memo, **kwargs)
-        query.prepare_params_by_name = self.prepare_params_by_name
         query.prepare_params_by_hash = self.prepare_params_by_hash
+        query.prepare_params_names = self.prepare_params_names
         query.prepare_params_order = self.prepare_params_order
         query.prepare_statement_name = self.prepare_statement_name
         query.prepare_statement_sql = self.prepare_statement_sql
@@ -34,12 +37,10 @@ class PrepareQuery(Query):
     def add_prepare_param(self, prepare_param):
         if prepare_param.hash in self.prepare_params_by_hash:
             return
-        if prepare_param.name in self.prepare_params_by_name:
+        if prepare_param.name in self.prepare_params_names:
             raise IncorrectBindParameter('\'%s\' parameter used multiple times' % prepare_param.name)
-        self.prepare_params_by_name[prepare_param.name] = prepare_param
         self.prepare_params_by_hash[prepare_param.hash] = prepare_param
-        if prepare_param.name not in self.prepare_params_order:
-            self.prepare_params_order.append(prepare_param.name)
+        self.prepare_params_names.add(prepare_param.name)
 
     def get_prepare_compiler(self, using=None, connection=None):
         if using is None and connection is None:  # pragma: no cover

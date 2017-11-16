@@ -1,6 +1,6 @@
 from datetime import date
 from django.test import TestCase
-from django.db.models import Case, When, CharField, BooleanField
+from django.db.models import Case, When, CharField, BooleanField, Value, IntegerField, Count
 from test_app.models import Author, Publisher, Book
 from django_prepared_query import BindParam, QueryNotPrepared, IncorrectBindParameter, PreparedStatementException
 
@@ -118,3 +118,12 @@ class PreparedStatementsTestCase(TestCase):
     def test_same_bind_param(self):
         with self.assertRaises(IncorrectBindParameter):
             Author.objects.filter(id=BindParam('param'), name=BindParam('param'))
+
+    def test_having_with_repeated_params(self):
+        extra_books = 5
+        min_books = 6
+        prepared_qs = Publisher.objects.annotate(books=Count('book') + BindParam('extra_books', field_type=IntegerField())).\
+            filter(books__gte=BindParam('min_books')).prepare()
+        qs = Publisher.objects.annotate(books=Count('book') + Value(extra_books, output_field=IntegerField())). \
+            filter(books__gte=min_books)
+        self.assertListEqual(prepared_qs.execute(extra_books=extra_books, min_books=min_books), list(qs))
