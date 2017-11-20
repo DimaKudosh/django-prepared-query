@@ -1,15 +1,18 @@
 language: python
 
 python:
-  - "2.7"
   - "3.6"
 
+env:
+  matrix:
+    - TOXENV=py36-django111
+    - TOXENV=py36-djangomaster
+
 install:
-  - pip install tox-travis
+  - pip install virtualenv tox coveralls
 
 script:
   - tox
-  - coverage run tests/runner.py
 
 after_success:
   - coveralls
