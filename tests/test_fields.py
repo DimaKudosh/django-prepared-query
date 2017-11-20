@@ -70,8 +70,6 @@ class FieldsTestCase(TestCase):
         qs.execute(decimal='123.12')
         qs.execute(decimal=123)
         with self.assertRaises(ValidationError):
-            qs.execute(decimal=123.12)
-        with self.assertRaises(ValidationError):
             qs.execute(decimal='text')
 
     def test_duration(self):

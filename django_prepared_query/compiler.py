@@ -1,6 +1,6 @@
 from hashlib import md5
 from django.db.models.sql.compiler import SQLCompiler
-from django.db.models.sql.constants import CURSOR, MULTI
+from django.db.models.sql.constants import CURSOR
 from django.db.models import AutoField, BigAutoField, IntegerField, BigIntegerField
 from .operations import PreparedOperationsFactory
 
@@ -43,7 +43,7 @@ class PrepareSQLCompiler(SQLCompiler):
         self.query.set_prepare_params_order(prepare_params_order)
         return sql_with_placeholders, fixed_sql_params
 
-    def execute_sql(self, result_type=CURSOR, chunked_fetch=False):
+    def execute_sql(self, *args, **kwargs):
         with self.connection.cursor() as cursor:
             sql, params = self.prepare_sql()
             cursor.execute(sql, params)
@@ -84,6 +84,6 @@ class ExecutePrepareSQLCompiler(SQLCompiler):
                 pass
             raise original_exception
 
-    def execute_sql(self, result_type=MULTI, chunked_fetch=False):
+    def execute_sql(self, *args, **kwargs):
         self.setup_execute_sql()
-        return super(ExecutePrepareSQLCompiler, self).execute_sql(result_type, chunked_fetch)
+        return super(ExecutePrepareSQLCompiler, self).execute_sql(*args, **kwargs)

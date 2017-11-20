@@ -1,4 +1,5 @@
 from collections import Sequence
+from django import get_version
 from django.db.models import QuerySet, Model
 from django.db import connections
 from django.db.models.lookups import IsNull, In
@@ -56,19 +57,26 @@ class PrepareQuerySet(QuerySet):
         if self.prepared:
             raise OperationOnPreparedStatement(msg)
 
+    def _clone_query(self, klass, query=None):
+        query = query or self.query
+        if get_version().startswith('2'):
+            return query.chain(klass=klass)
+        else:
+            return query.clone(klass=klass)
+
     def _execute_prepare(self):
         connection = connections[self.db]
-        query = self.query
-        name = query.prepare_statement_name
+        name = self.query.prepare_statement_name
         prepared_statements = getattr(connection, 'prepared_statements', None)
         if prepared_statements is None:
             prepared_statements = {}
+        query = None
         if name not in prepared_statements or prepared_statements[name] != connection.connection:
-            query = query.clone(klass=PrepareQuery)
+            query = self._clone_query(klass=PrepareQuery)
             query.get_prepare_compiler(self.db).execute_sql()
             prepared_statements[name] = connection.connection
             setattr(connection, 'prepared_statements', prepared_statements)
-        self.query = query.clone(klass=ExecutePrepareQuery)
+        self.query = self._clone_query(klass=ExecutePrepareQuery, query=query)
         return self
 
     def prepare(self):
@@ -88,7 +96,7 @@ class PrepareQuerySet(QuerySet):
         for name, prepare_param in self.query.prepare_params_by_hash.items():
             if not prepare_param.field_type:
                 raise PreparedStatementException('Field type is required for %s' % name)
-        query = self.query.clone(klass=PrepareQuery)
+        query = self._clone_query(klass=PrepareQuery)
         query.get_prepare_compiler(self.db).prepare_sql()
         self.query = query
         self.prepared = True
@@ -118,9 +126,9 @@ class PrepareQuerySet(QuerySet):
         qs = self._clone()
         return list(qs._base_iter())
 
-    def iterator(self):
+    def iterator(self, *args, **kwargs):
         self._check_prepared('Iterator not allowed on prepared statement')
-        return super(PrepareQuerySet, self).iterator()  # pragma: no cover
+        return super(PrepareQuerySet, self).iterator(*args, **kwargs)  # pragma: no cover
 
     def aggregate(self, *args, **kwargs):
         self._check_prepared('Aggregate not allowed on prepared statement')
@@ -150,10 +158,10 @@ class PrepareQuerySet(QuerySet):
         self._check_prepared('Update or create not allowed on prepared statement')
         return super(PrepareQuerySet, self).update_or_create(defaults=defaults, **kwargs)  # pragma: no cover
 
-    def _earliest_or_latest(self, field_name=None, direction="-"):
+    def _earliest_or_latest(self, *args, **kwargs):
         self._check_prepared('Earliest or latest not allowed on prepared statement')
         return super(PrepareQuerySet, self).\
-            _earliest_or_latest(field_name=field_name, direction=direction)  # pragma: no cover
+            _earliest_or_latest(*args, **kwargs)  # pragma: no cover
 
     def first(self):
         self._check_prepared('First not allowed on prepared statement')
@@ -163,9 +171,9 @@ class PrepareQuerySet(QuerySet):
         self._check_prepared('Last not allowed on prepared statement')
         return super(PrepareQuerySet, self).last()  # pragma: no cover
 
-    def in_bulk(self, id_list=None):
+    def in_bulk(self, *args, **kwargs):
         self._check_prepared('Operation not allowed on prepared statement')
-        return super(PrepareQuerySet, self).in_bulk(id_list=id_list)  # pragma: no cover
+        return super(PrepareQuerySet, self).in_bulk(*args, **kwargs)  # pragma: no cover
 
     def delete(self):
         self._check_prepared('Delete not allowed on prepared statement')

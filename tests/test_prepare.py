@@ -14,7 +14,7 @@ class PreparedStatementsTestCase(TestCase):
         Author.objects.create(name='Patrick Modiano', age=50, gender='m')
         publisher = Publisher.objects.create(name='Test Publisher', num_awards=43)
         book = Book.objects.create(name='The Unwomanly Face of War', pages=300, price='200.00', rating=4.65,
-                            publisher=publisher, pubdate=date.today())
+                                   publisher=publisher, pubdate=date.today())
         book.authors.add(author)
 
     @classmethod

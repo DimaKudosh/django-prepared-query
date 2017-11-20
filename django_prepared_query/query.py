@@ -1,3 +1,4 @@
+from django import get_version
 from django.db import connections
 from django.db.models.sql.query import Query
 from .compiler import PrepareSQLCompiler, ExecutePrepareSQLCompiler
@@ -14,6 +15,15 @@ class PrepareQuery(Query):
         self.prepare_statement_sql = None
         self.prepare_statement_sql_params = ()
 
+    def _clone_prepared_data(self, query):
+        query.prepare_params_by_hash = self.prepare_params_by_hash
+        query.prepare_params_names = self.prepare_params_names
+        query.prepare_params_order = self.prepare_params_order
+        query.prepare_statement_name = self.prepare_statement_name
+        query.prepare_statement_sql = self.prepare_statement_sql
+        query.prepare_statement_sql_params = self.prepare_statement_sql_params
+        return query
+
     def set_prepare_statement_name(self, name):
         self.prepare_statement_name = name
 
@@ -24,14 +34,12 @@ class PrepareQuery(Query):
     def set_prepare_params_order(self, order):
         self.prepare_params_order = order
 
-    def clone(self, klass=None, memo=None, **kwargs):
-        query = super(PrepareQuery, self).clone(klass=klass, memo=memo, **kwargs)
-        query.prepare_params_by_hash = self.prepare_params_by_hash
-        query.prepare_params_names = self.prepare_params_names
-        query.prepare_params_order = self.prepare_params_order
-        query.prepare_statement_name = self.prepare_statement_name
-        query.prepare_statement_sql = self.prepare_statement_sql
-        query.prepare_statement_sql_params = self.prepare_statement_sql_params
+    def clone(self, *args, **kwargs):
+        if get_version().startswith('2'):
+            query = super(PrepareQuery, self).clone()
+        else:
+            query = super(PrepareQuery, self).clone(*args, **kwargs)
+        self._clone_prepared_data(query)
         return query
 
     def add_prepare_param(self, prepare_param):

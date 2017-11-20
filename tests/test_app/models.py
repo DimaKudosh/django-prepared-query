@@ -62,4 +62,4 @@ class AllFieldsModel(models.Model):
     time = models.TimeField()
     url = models.URLField()
     uuid = models.UUIDField()
-    foreign_key = models.ForeignKey(BigAutoModel)
+    foreign_key = models.ForeignKey(BigAutoModel, on_delete=models.CASCADE)
