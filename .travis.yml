@@ -3,11 +3,6 @@ language: python
 python:
   - "3.6"
 
-env:
-  matrix:
-    - TOXENV=py36-django111
-    - TOXENV=py36-djangomaster
-
 install:
   - pip install virtualenv tox coveralls
 
