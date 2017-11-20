@@ -3,3 +3,6 @@
 demo/.ipynb_checkpoints
 demo/data
 .coverage
+docs/_build
+.tox
+.mypy_cache
