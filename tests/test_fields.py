@@ -219,8 +219,14 @@ class FieldsTestCase(TestCase):
         '''
         qs = AllFieldsModel.objects.filter(foreign_key=BindParam('foreign_key')).prepare()
         m = BigAutoModel.objects.create()
-        qs.execute(foreign_key=m.id)
         qs.execute(foreign_key=m)
+        qs.execute(foreign_key=m.id)
+        qs = AllFieldsModel.objects.filter(foreign_key_id=BindParam('foreign_key')).prepare()
+        qs.execute(foreign_key=m)
+        qs.execute(foreign_key=m.id)
+        qs = AllFieldsModel.objects.filter(foreign_key__id=BindParam('foreign_key')).prepare()
+        qs.execute(foreign_key=m)
+        qs.execute(foreign_key=m.id)
 
     def test_big_auto(self):
         qs = BigAutoModel.objects.filter(id=BindParam('id')).prepare()
