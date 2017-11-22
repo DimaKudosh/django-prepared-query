@@ -1,7 +1,7 @@
 from django import get_version
 from django.db import connections
 from django.db.models.sql.query import Query
-from .compiler import PrepareSQLCompiler, ExecutePrepareSQLCompiler
+from .compiler import PrepareSQLCompiler, ExecutePreparedSQLCompiler
 from .exceptions import IncorrectBindParameter
 
 
@@ -58,13 +58,13 @@ class PrepareQuery(Query):
         return PrepareSQLCompiler(self, connection, using)
 
 
-class ExecutePrepareQuery(PrepareQuery):
+class ExecutePreparedQuery(PrepareQuery):
     def __init__(self, *args, **kwargs):  # pragma: no cover
         super(PrepareQuery, self).__init__(*args, **kwargs)
         self.prepare_params_values = {}
 
     def clone(self, klass=None, memo=None, **kwargs):
-        query = super(ExecutePrepareQuery, self).clone(klass=klass, memo=memo, **kwargs)
+        query = super(ExecutePreparedQuery, self).clone(klass=klass, memo=memo, **kwargs)
         query.prepare_params_values = self.prepare_params_values
         return query
 
@@ -73,4 +73,4 @@ class ExecutePrepareQuery(PrepareQuery):
             raise ValueError("Need either using or connection")
         if using:
             connection = connections[using]
-        return ExecutePrepareSQLCompiler(self, connection, using)
+        return ExecutePreparedSQLCompiler(self, connection, using)

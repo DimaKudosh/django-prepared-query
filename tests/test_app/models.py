@@ -1,5 +1,5 @@
 from django.db import models
-from django_prepared_query import PrepareManager
+from django_prepared_query import PreparedManager
 
 
 class Author(models.Model):
@@ -7,7 +7,7 @@ class Author(models.Model):
         ('f', 'Female'),
         ('m', 'Male'),
     )
-    objects = PrepareManager()
+    objects = PreparedManager()
     name = models.CharField(max_length=100)
     age = models.IntegerField()
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
@@ -15,13 +15,13 @@ class Author(models.Model):
 
 
 class Publisher(models.Model):
-    objects = PrepareManager()
+    objects = PreparedManager()
     name = models.CharField(max_length=300)
     num_awards = models.IntegerField()
 
 
 class Book(models.Model):
-    objects = PrepareManager()
+    objects = PreparedManager()
     name = models.CharField(max_length=300)
     pages = models.IntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -32,12 +32,12 @@ class Book(models.Model):
 
 
 class BigAutoModel(models.Model):
-    objects = PrepareManager()
+    objects = PreparedManager()
     id = models.BigAutoField(primary_key=True)
 
 
 class AllFieldsModel(models.Model):
-    objects = PrepareManager()
+    objects = PreparedManager()
     big_int = models.BigIntegerField()
     binary = models.BinaryField()
     boolean = models.BooleanField()

@@ -10,7 +10,7 @@ class PreparedStatementsTestCase(TestCase):
 
     def test_prepare_queryset_representation(self):
         representation = repr(self.prepared_qs)
-        self.assertTrue(representation.startswith('PrepareQuerySet'))
+        self.assertTrue(representation.startswith('PreparedQuerySet'))
 
     def test_iter_on_prepared_statement(self):
         with self.assertRaises(OperationOnPreparedStatement):

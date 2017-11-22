@@ -4,17 +4,17 @@ from django.db.models import QuerySet, Model
 from django.db import connections
 from django.db.models.lookups import IsNull, In
 from django.core.exceptions import ValidationError
-from .query import PrepareQuery, ExecutePrepareQuery
+from .query import PrepareQuery, ExecutePreparedQuery
 from .params import BindParam
 from .utils import get_where_nodes
 from .exceptions import PreparedStatementException, QueryNotPrepared, IncorrectBindParameter, \
     OperationOnPreparedStatement, NotSupportedLookup
 
 
-class PrepareQuerySet(QuerySet):
+class PreparedQuerySet(QuerySet):
     def __init__(self, model=None, query=None, using=None, hints=None):
-        super(PrepareQuerySet, self).__init__(model=model, query=query, using=using, hints=hints)
-        if not query and not isinstance(self.query, ExecutePrepareQuery):
+        super(PreparedQuerySet, self).__init__(model=model, query=query, using=using, hints=hints)
+        if not query and not isinstance(self.query, ExecutePreparedQuery):
             self.query = PrepareQuery(self.model)
         self.prepared = False
         self.prepare_placeholders = []
@@ -23,8 +23,8 @@ class PrepareQuerySet(QuerySet):
         if self.prepared:
             prepare_query = self.query.prepare_statement_sql % self.query.prepare_statement_sql_params
             arguments = self.query.prepare_params_order
-            return 'PrepareQuerySet <%s (%s)>' % (prepare_query, ', '.join(arguments))
-        return super(PrepareQuerySet, self).__repr__()
+            return 'PreparedQuerySet <%s (%s)>' % (prepare_query, ', '.join(arguments))
+        return super(PreparedQuerySet, self).__repr__()
 
     def __iter__(self):
         self._check_prepared('PreparedQuerySet object is not iterable')
@@ -32,26 +32,26 @@ class PrepareQuerySet(QuerySet):
 
     def __len__(self):
         self._check_prepared('PreparedQuerySet object has no len()')
-        return super(PrepareQuerySet, self).__len__()  # pragma: no cover
+        return super(PreparedQuerySet, self).__len__()  # pragma: no cover
 
     def __bool__(self):
         self._check_prepared('PreparedQuerySet can\'t be fetched without calling execute method')
-        return super(PrepareQuerySet, self).__bool__()  # pragma: no cover
+        return super(PreparedQuerySet, self).__bool__()  # pragma: no cover
 
     def __getitem__(self, item):
         self._check_prepared('PreparedQuerySet can\'t be fetched without calling execute method')
-        return super(PrepareQuerySet, self).__getitem__(item)  # pragma: no cover
+        return super(PreparedQuerySet, self).__getitem__(item)  # pragma: no cover
 
     def __and__(self, other):
         self._check_prepared('AND not allowed on prepared statement')
-        return super(PrepareQuerySet, self).__and__(other)  # pragma: no cover
+        return super(PreparedQuerySet, self).__and__(other)  # pragma: no cover
 
     def __or__(self, other):
         self._check_prepared('OR not allowed on prepared statement')
-        return super(PrepareQuerySet, self).__or__(other)  # pragma: no cover
+        return super(PreparedQuerySet, self).__or__(other)  # pragma: no cover
 
     def _base_iter(self):
-        return super(PrepareQuerySet, self).__iter__()
+        return super(PreparedQuerySet, self).__iter__()
 
     def _check_prepared(self, msg):
         if self.prepared:
@@ -76,7 +76,7 @@ class PrepareQuerySet(QuerySet):
             query.get_prepare_compiler(self.db).execute_sql()
             prepared_statements[name] = connection.connection
             setattr(connection, 'prepared_statements', prepared_statements)
-        self.query = self._clone_query(klass=ExecutePrepareQuery, query=query)
+        self.query = self._clone_query(klass=ExecutePreparedQuery, query=query)
         return self
 
     def prepare(self):
@@ -128,136 +128,136 @@ class PrepareQuerySet(QuerySet):
 
     def iterator(self, *args, **kwargs):
         self._check_prepared('Iterator not allowed on prepared statement')
-        return super(PrepareQuerySet, self).iterator(*args, **kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).iterator(*args, **kwargs)  # pragma: no cover
 
     def aggregate(self, *args, **kwargs):
         self._check_prepared('Aggregate not allowed on prepared statement')
-        return super(PrepareQuerySet, self).aggregate(*args, **kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).aggregate(*args, **kwargs)  # pragma: no cover
 
     def count(self):
         self._check_prepared('Count not allowed on prepared statement')
-        return super(PrepareQuerySet, self).count()  # pragma: no cover
+        return super(PreparedQuerySet, self).count()  # pragma: no cover
 
     def get(self, *args, **kwargs):
         self._check_prepared('Get not allowed on prepared statement')
-        return super(PrepareQuerySet, self).get(*args, **kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).get(*args, **kwargs)  # pragma: no cover
 
     def create(self, **kwargs):
         self._check_prepared('Create not allowed on prepared statement')
-        return super(PrepareQuerySet, self).create(**kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).create(**kwargs)  # pragma: no cover
 
     def bulk_create(self, objs, batch_size=None):
         self._check_prepared('Bulk Create not allowed on prepared statement')
-        return super(PrepareQuerySet, self).bulk_create(objs, batch_size)  # pragma: no cover
+        return super(PreparedQuerySet, self).bulk_create(objs, batch_size)  # pragma: no cover
 
     def get_or_create(self, defaults=None, **kwargs):
         self._check_prepared('Get or create not allowed on prepared statement')
-        return super(PrepareQuerySet, self).get_or_create(defaults=defaults, **kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).get_or_create(defaults=defaults, **kwargs)  # pragma: no cover
 
     def update_or_create(self, defaults=None, **kwargs):
         self._check_prepared('Update or create not allowed on prepared statement')
-        return super(PrepareQuerySet, self).update_or_create(defaults=defaults, **kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).update_or_create(defaults=defaults, **kwargs)  # pragma: no cover
 
     def _earliest_or_latest(self, *args, **kwargs):
         self._check_prepared('Earliest or latest not allowed on prepared statement')
-        return super(PrepareQuerySet, self).\
+        return super(PreparedQuerySet, self).\
             _earliest_or_latest(*args, **kwargs)  # pragma: no cover
 
     def first(self):
         self._check_prepared('First not allowed on prepared statement')
-        return super(PrepareQuerySet, self).first()  # pragma: no cover
+        return super(PreparedQuerySet, self).first()  # pragma: no cover
 
     def last(self):
         self._check_prepared('Last not allowed on prepared statement')
-        return super(PrepareQuerySet, self).last()  # pragma: no cover
+        return super(PreparedQuerySet, self).last()  # pragma: no cover
 
     def in_bulk(self, *args, **kwargs):
         self._check_prepared('Operation not allowed on prepared statement')
-        return super(PrepareQuerySet, self).in_bulk(*args, **kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).in_bulk(*args, **kwargs)  # pragma: no cover
 
     def delete(self):
         self._check_prepared('Delete not allowed on prepared statement')
-        return super(PrepareQuerySet, self).delete()  # pragma: no cover
+        return super(PreparedQuerySet, self).delete()  # pragma: no cover
 
     def update(self, **kwargs):
         self._check_prepared('Update not allowed on prepared statement')
-        return super(PrepareQuerySet, self).update(**kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).update(**kwargs)  # pragma: no cover
 
     def exists(self):
         self._check_prepared('Exists not allowed on prepared statement')
-        return super(PrepareQuerySet, self).exists()  # pragma: no cover
+        return super(PreparedQuerySet, self).exists()  # pragma: no cover
 
     def raw(self, raw_query, params=None, translations=None, using=None):
         self._check_prepared('Raw not allowed on prepared statement')
-        return super(PrepareQuerySet, self).raw(raw_query, params=params,
+        return super(PreparedQuerySet, self).raw(raw_query, params=params,
                                                 translations=translations, using=using)  # pragma: no cover
 
     def values(self, *fields, **expressions):
         self._check_prepared('Values not allowed on prepared statement')
-        return super(PrepareQuerySet, self).values(*fields, **expressions)  # pragma: no cover
+        return super(PreparedQuerySet, self).values(*fields, **expressions)  # pragma: no cover
 
     def values_list(self, *fields, **kwargs):
         self._check_prepared('Values list not allowed on prepared statement')
-        return super(PrepareQuerySet, self).values_list(*fields, **kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).values_list(*fields, **kwargs)  # pragma: no cover
 
     def dates(self, field_name, kind, order='ASC'):
         self._check_prepared('Dates not allowed on prepared statement')
-        return super(PrepareQuerySet, self).dates(field_name, kind, order)  # pragma: no cover
+        return super(PreparedQuerySet, self).dates(field_name, kind, order)  # pragma: no cover
 
     def datetimes(self, field_name, kind, order='ASC', tzinfo=None):
         self._check_prepared('Datetimes not allowed on prepared statement')
-        return super(PrepareQuerySet, self).datetimes(field_name, kind, order, tzinfo)  # pragma: no cover
+        return super(PreparedQuerySet, self).datetimes(field_name, kind, order, tzinfo)  # pragma: no cover
 
     def none(self):
         self._check_prepared('None not allowed on prepared statement')
-        return super(PrepareQuerySet, self).none()  # pragma: no cover
+        return super(PreparedQuerySet, self).none()  # pragma: no cover
 
     def all(self):
         self._check_prepared('All not allowed on prepared statement')
-        return super(PrepareQuerySet, self).all()  # pragma: no cover
+        return super(PreparedQuerySet, self).all()  # pragma: no cover
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
         self._check_prepared('Filter not allowed on prepared statement')
-        return super(PrepareQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)  # pragma: no cover
 
     def select_related(self, *fields):
         self._check_prepared('Select related not allowed on prepared statement')
-        return super(PrepareQuerySet, self).select_related(*fields)  # pragma: no cover
+        return super(PreparedQuerySet, self).select_related(*fields)  # pragma: no cover
 
     def prefetch_related(self, *lookups):
         self._check_prepared('Prefetch related not allowed on prepared statement')
-        return super(PrepareQuerySet, self).prefetch_related(*lookups)  # pragma: no cover
+        return super(PreparedQuerySet, self).prefetch_related(*lookups)  # pragma: no cover
 
     def annotate(self, *args, **kwargs):
         self._check_prepared('Annotate not allowed on prepared statement')
-        return super(PrepareQuerySet, self).annotate(*args, **kwargs)  # pragma: no cover
+        return super(PreparedQuerySet, self).annotate(*args, **kwargs)  # pragma: no cover
 
     def order_by(self, *field_names):
         self._check_prepared('Order by not allowed on prepared statement')
-        return super(PrepareQuerySet, self).order_by(*field_names)  # pragma: no cover
+        return super(PreparedQuerySet, self).order_by(*field_names)  # pragma: no cover
 
     def distinct(self, *field_names):
         self._check_prepared('Distinct not allowed on prepared statement')
-        return super(PrepareQuerySet, self).distinct(*field_names)  # pragma: no cover
+        return super(PreparedQuerySet, self).distinct(*field_names)  # pragma: no cover
 
     def extra(self, select=None, where=None, params=None, tables=None,
               order_by=None, select_params=None):
         self._check_prepared('Extra not allowed on prepared statement')
-        return super(PrepareQuerySet, self).extra(select, where, params, tables,
+        return super(PreparedQuerySet, self).extra(select, where, params, tables,
                                                   order_by, select_params)  # pragma: no cover
 
     def reverse(self):
         self._check_prepared('Reverse not allowed on prepare statement')
-        return super(PrepareQuerySet, self).reverse()  # pragma: no cover
+        return super(PreparedQuerySet, self).reverse()  # pragma: no cover
 
     def defer(self, *fields):
         self._check_prepared('Defer not allowed on prepare statement')
-        return super(PrepareQuerySet, self).defer(*fields)  # pragma: no cover
+        return super(PreparedQuerySet, self).defer(*fields)  # pragma: no cover
 
     def only(self, *fields):
         self._check_prepared('Only not allowed on prepare statement')
-        return super(PrepareQuerySet, self).only(*fields)  # pragma: no cover
+        return super(PreparedQuerySet, self).only(*fields)  # pragma: no cover
 
     def using(self, alias):
         self._check_prepared('Using not allowed on prepare statement')
-        return super(PrepareQuerySet, self).using(alias)  # pragma: no cover
+        return super(PreparedQuerySet, self).using(alias)  # pragma: no cover

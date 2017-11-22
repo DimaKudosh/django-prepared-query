@@ -1,6 +1,5 @@
 from hashlib import md5
 from django.db.models.sql.compiler import SQLCompiler
-from django.db.models.sql.constants import CURSOR
 from django.db.models import AutoField, BigAutoField, IntegerField, BigIntegerField
 from .operations import PreparedOperationsFactory
 
@@ -50,9 +49,9 @@ class PrepareSQLCompiler(SQLCompiler):
             return cursor
 
 
-class ExecutePrepareSQLCompiler(SQLCompiler):
+class ExecutePreparedSQLCompiler(SQLCompiler):
     def __init__(self, query, connection, using):
-        super(ExecutePrepareSQLCompiler, self).__init__(query, connection, using)
+        super(ExecutePreparedSQLCompiler, self).__init__(query, connection, using)
         prepare_params_values = self.query.prepare_params_values
         params = []
         for param_hash in self.query.prepare_params_order:
@@ -86,4 +85,4 @@ class ExecutePrepareSQLCompiler(SQLCompiler):
 
     def execute_sql(self, *args, **kwargs):
         self.setup_execute_sql()
-        return super(ExecutePrepareSQLCompiler, self).execute_sql(*args, **kwargs)
+        return super(ExecutePreparedSQLCompiler, self).execute_sql(*args, **kwargs)

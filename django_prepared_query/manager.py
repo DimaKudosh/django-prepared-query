@@ -1,6 +1,6 @@
 from django.db.models.manager import BaseManager
-from .queryset import PrepareQuerySet
+from .queryset import PreparedQuerySet
 
 
-class PrepareManager(BaseManager.from_queryset(PrepareQuerySet)):
+class PreparedManager(BaseManager.from_queryset(PreparedQuerySet)):
     pass
