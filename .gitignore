@@ -3,6 +3,8 @@
 demo/.ipynb_checkpoints
 demo/data
 .coverage
-docs/_build
+docs/build
 .tox
 .mypy_cache
+django_prepared_query.egg-info
+MANIFEST
