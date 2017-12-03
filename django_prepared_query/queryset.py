@@ -217,10 +217,6 @@ class PreparedQuerySet(QuerySet):
         self._check_prepared('None not allowed on prepared statement')
         return super(PreparedQuerySet, self).none()  # pragma: no cover
 
-    def all(self):
-        self._check_prepared('All not allowed on prepared statement')
-        return super(PreparedQuerySet, self).all()  # pragma: no cover
-
     def _filter_or_exclude(self, negate, *args, **kwargs):
         self._check_prepared('Filter not allowed on prepared statement')
         return super(PreparedQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)  # pragma: no cover

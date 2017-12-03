@@ -38,10 +38,6 @@ class PreparedStatementsTestCase(TestCase):
         with self.assertRaises(OperationOnPreparedStatement):
             self.prepared_qs | another
 
-    def test_all_on_prepared_statement(self):
-        with self.assertRaises(OperationOnPreparedStatement):
-            self.prepared_qs.all()
-
     def test_filter_on_prepared_statement(self):
         with self.assertRaises(OperationOnPreparedStatement):
             self.prepared_qs.filter(name='some')
