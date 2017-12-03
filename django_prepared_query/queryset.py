@@ -82,14 +82,15 @@ class PreparedQuerySet(QuerySet):
     def prepare(self):
         # Set field types for BindParams
         for filter_param, is_inner_query in get_where_nodes(self.query):
-            if type(filter_param) in [IsNull, In]:
-                raise NotSupportedLookup('%s lookup isn\'t supported in prepared statements' % filter_param.lookup_name)
             expressions_list = filter_param.rhs
             if not isinstance(expressions_list, Sequence):
                 expressions_list = [expressions_list]
             for expression in expressions_list:
                 if not isinstance(expression, BindParam):
                     continue
+                if type(filter_param) in [IsNull, In]:
+                    raise NotSupportedLookup(
+                        '%s lookup isn\'t supported in prepared statements' % filter_param.lookup_name)
                 if is_inner_query:
                     self.query.add_prepare_param(expression)
                     prepare_param = expression
