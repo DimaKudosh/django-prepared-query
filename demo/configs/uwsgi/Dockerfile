@@ -2,8 +2,7 @@ FROM python:3.6
 
 RUN apt-get update && \
     apt-get install -y && \
-    pip3 install uwsgi && \
-    pip3 install gunicorn
+    pip3 install uwsgi
 
 COPY ./demo /opt/app
 ADD . /opt/django_prepared_query
