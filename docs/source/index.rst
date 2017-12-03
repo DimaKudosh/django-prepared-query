@@ -34,7 +34,7 @@ For using prepared statements you must replace model standard manager with `Prep
 
 `PreparedManager` has 2 additional methods: prepare and execute that are equivalent to SQL prepare and execute commands.
 Calling execute before prepare raises `QueryNotPrepared` exception.
-After prepare you can call only use execute method, other methods raises `OperationOnPreparedStatement` exception.
+After prepare you can call only execute method, other methods raises `OperationOnPreparedStatement` exception.
 
 .. code-block:: python
 
@@ -61,3 +61,15 @@ Also you can use different built-in lookups except `isnull` and `in` that raises
     qs = Book.objects.filter(name__startswith=BindParam('book_name')).prepare()
     result = qs.execute(book_name='Harry Potter')
 
+Before running execute query django_prepared_query validates input parameter types, `ValidationError` will be raised in cases when parameter type isn't matched.
+
+Contributing
+------------
+
+To contribute to django_prepared_query create a fork on GitHub. Clone your fork, make some changes, and submit a pull request.
+Issues
+
+Issues
+------
+
+Use the GitHub `issue tracker <https://github.com/DimaKudosh/django-prepared-query/issues'>`_ to submit bugs, issues, and feature requests.
