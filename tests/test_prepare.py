@@ -127,3 +127,11 @@ class PreparedStatementsTestCase(TestCase):
         qs = Publisher.objects.annotate(books=Count('book') + Value(extra_books, output_field=IntegerField())). \
             filter(books__gte=min_books)
         self.assertListEqual(prepared_qs.execute(extra_books=extra_books, min_books=min_books), list(qs))
+
+    def test_subquery(self):
+        name_starts = 'Svetlana'
+        prepare_inner_qs = Publisher.objects.filter(name__startswith=BindParam('name'))
+        prepare_qs = Book.objects.filter(publisher__in=prepare_inner_qs).prepare()
+        inner_qs = Publisher.objects.filter(name__startswith=name_starts)
+        qs = Book.objects.filter(publisher__in=inner_qs)
+        self.assertListEqual(prepare_qs.execute(name=name_starts), list(qs))
