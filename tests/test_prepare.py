@@ -32,7 +32,9 @@ class PreparedStatementsTestCase(TestCase):
         prepared_qs = Author.objects.filter(name=BindParam('name')).prepare()
         with self.assertRaises(IncorrectBindParameter):
             prepared_qs.execute()
+        with self.assertRaises(IncorrectBindParameter):
             prepared_qs.execute(wrong_param=1)
+        with self.assertRaises(IncorrectBindParameter):
             prepared_qs.execute(name='Bob Dylan', another_param=1)
 
     def test_execute_param_without_type(self):
@@ -85,11 +87,12 @@ class PreparedStatementsTestCase(TestCase):
             publisher = book.publisher
 
     def test_prefetch_related(self):
-        author_name = 'Svetlana Alexievich'
-        prepared_qs = Author.objects.filter(name=author_name).prefetch_related('books').prepare()
+        author_names = ['Svetlana Alexievich', 'Kazuo Ishiguro']
+        prepared_qs = Author.objects.filter(name__in=author_names).prefetch_related('books').prepare()
         with self.assertNumQueries(3):  # Prepare, execute and prefetch query
-            author = prepared_qs.execute()[0]
-        self.assertEqual(author.books.count(), 1)
+            authors = prepared_qs.execute()
+            list(authors[0].books.all())
+            list(authors[1].books.all())
 
     def test_only(self):
         author_name = 'Svetlana Alexievich'
@@ -135,3 +138,10 @@ class PreparedStatementsTestCase(TestCase):
         inner_qs = Publisher.objects.filter(name__startswith=name_starts)
         qs = Book.objects.filter(publisher__in=inner_qs)
         self.assertListEqual(prepare_qs.execute(name=name_starts), list(qs))
+
+    def test_execute_iterator(self):
+        prepared_qs = Author.objects.filter(name=BindParam('name')).prepare()
+        authors_iterator = prepared_qs.execute_iterator(name='Bob Dylan')
+        author = next(authors_iterator)
+        with self.assertRaises(StopIteration):
+            next(authors_iterator)

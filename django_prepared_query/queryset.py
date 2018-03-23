@@ -9,6 +9,10 @@ from .params import BindParam
 from .utils import get_where_nodes
 from .exceptions import PreparedStatementException, QueryNotPrepared, IncorrectBindParameter, \
     OperationOnPreparedStatement, NotSupportedLookup
+from .statements_pool import statements_pool
+
+
+DJANGO_2 = get_version().startswith('2')
 
 
 class PreparedQuerySet(QuerySet):
@@ -16,6 +20,7 @@ class PreparedQuerySet(QuerySet):
         super(PreparedQuerySet, self).__init__(model=model, query=query, using=using, hints=hints)
         if not query and not isinstance(self.query, ExecutePreparedQuery):
             self.query = PrepareQuery(self.model)
+        self._prepare_query = None
         self.prepared = False
         self.prepare_placeholders = []
 
@@ -57,30 +62,32 @@ class PreparedQuerySet(QuerySet):
         if self.prepared:
             raise OperationOnPreparedStatement(msg)
 
+    def _clone(self, **kwargs):
+        qs = super(PreparedQuerySet, self)._clone(**kwargs)
+        qs._prepare_query = self._clone_query(PrepareQuery, self._prepare_query)
+        return qs
+
     def _clone_query(self, klass, query=None):
         query = query or self.query
-        if get_version().startswith('2'):
+        if DJANGO_2:
             return query.chain(klass=klass)
         else:
             return query.clone(klass=klass)
 
     def _execute_prepare(self):
+        '''
+        Checks that prepare executed for the current connection and execute it if not
+        '''
         connection = connections[self.db]
-        name = self.query.prepare_statement_name
-        prepared_statements = getattr(connection, 'prepared_statements', None)
-        if prepared_statements is None:
-            prepared_statements = {}
-        query = None
-        if name not in prepared_statements or prepared_statements[name] != connection.connection:
-            query = self._clone_query(klass=PrepareQuery)
-            query.get_prepare_compiler(self.db).execute_sql()
-            prepared_statements[name] = connection.connection
-            setattr(connection, 'prepared_statements', prepared_statements)
-        self.query = self._clone_query(klass=ExecutePreparedQuery, query=query)
-        return self
+        name = self._prepare_query.prepare_statement_name
+        if not connection.connection or name not in statements_pool[connection.connection]:
+            self._prepare_query.get_prepare_compiler(self.db).execute_sql()
+            statements_pool[connection.connection].append(name)
 
-    def prepare(self):
-        # Set field types for BindParams
+    def _set_types_for_prepare_params(self):
+        '''
+        Set field types for BindParams
+        '''
         for filter_param, is_inner_query in get_where_nodes(self.query):
             expressions_list = filter_param.rhs
             if not isinstance(expressions_list, Sequence):
@@ -101,23 +108,32 @@ class PreparedQuerySet(QuerySet):
         for name, prepare_param in self.query.prepare_params_by_hash.items():
             if not prepare_param.field_type:
                 raise PreparedStatementException('Field type is required for %s' % name)
-        query = self._clone_query(klass=PrepareQuery)
-        query.get_prepare_compiler(self.db).prepare_sql()
-        self.query = query
+
+    def prepare(self):
+        '''
+        Compile prepare sql and mark qs as prepared
+        '''
+        self._set_types_for_prepare_params()
+        self._prepare_query = self.query
+        self._prepare_query.get_prepare_compiler(self.db).prepare_sql()
+        self.query = self._clone_query(klass=ExecutePreparedQuery, query=self._prepare_query)
+        self.query.setup_metadata(self.db)
         self.prepared = True
         return self
 
-    def execute(self, **kwargs):
+    def _check_execute_params(self, params):
+        '''
+        Check names and types for execute parameters
+        '''
         if not self.prepared:
             raise QueryNotPrepared('Query isn\'t prepared!')
-        params = set(kwargs.keys())
-        if params != self.query.prepare_params_names:
+        if set(params.keys()) != self.query.prepare_params_names:
             raise IncorrectBindParameter('Incorrect params')
         # validate input parameters
         for prepare_param in self.query.prepare_params_by_hash.values():
             field = prepare_param.field_type
             name = prepare_param.name
-            param = kwargs.get(name)
+            param = params.get(name)
             if isinstance(param, Model):
                 param = param._get_pk_val()
             try:
@@ -125,15 +141,30 @@ class PreparedQuerySet(QuerySet):
             except:
                 raise ValidationError('%s is incorrect type for %s parameter' % (param, name))
             field.run_validators(param)
-            kwargs[name] = param
+            params[name] = param
+        return params
+
+    def execute_iterator(self, **params):
+        '''
+        Runs execute command and prepare if needed. Returns iterator.
+        '''
+        params = self._check_execute_params(params)
         self._execute_prepare()
-        self.query.prepare_params_values = kwargs
-        qs = self._clone()
-        return list(qs._base_iter())
+        self.query.set_prepare_params_values(params)
+        self._result_cache = None
+        return self._base_iter()
+
+    def execute(self, **kwargs):
+        return list(self.execute_iterator(**kwargs))
 
     def iterator(self, *args, **kwargs):
         self._check_prepared('Iterator not allowed on prepared statement')
         return super(PreparedQuerySet, self).iterator(*args, **kwargs)  # pragma: no cover
+
+    def all(self):
+        if self.prepared:
+            return self
+        return super(PreparedQuerySet, self).all()
 
     def aggregate(self, *args, **kwargs):
         self._check_prepared('Aggregate not allowed on prepared statement')

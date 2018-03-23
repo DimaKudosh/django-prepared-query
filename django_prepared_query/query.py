@@ -5,6 +5,9 @@ from .compiler import PrepareSQLCompiler, ExecutePreparedSQLCompiler
 from .exceptions import IncorrectBindParameter
 
 
+DJANGO_2 = get_version().startswith('2')
+
+
 class PrepareQuery(Query):
     def __init__(self, *args, **kwargs):
         super(PrepareQuery, self).__init__(*args, **kwargs)
@@ -35,11 +38,11 @@ class PrepareQuery(Query):
         self.prepare_params_order = order
 
     def clone(self, *args, **kwargs):
-        if get_version().startswith('2'):
+        if DJANGO_2:
             query = super(PrepareQuery, self).clone()
         else:
             query = super(PrepareQuery, self).clone(*args, **kwargs)
-        self._clone_prepared_data(query)
+        query = self._clone_prepared_data(query)
         return query
 
     def add_prepare_param(self, prepare_param):
@@ -51,6 +54,10 @@ class PrepareQuery(Query):
         self.prepare_params_names.add(prepare_param.name)
 
     def get_prepare_compiler(self, using=None, connection=None):
+        '''
+        Same as get_compiler, but returns PrepareSQLCompiler.
+        get_compiler used for running normal queries created with PreparedManager.
+        '''
         if using is None and connection is None:  # pragma: no cover
             raise ValueError("Need either using or connection")
         if using:
@@ -66,11 +73,21 @@ class ExecutePreparedQuery(PrepareQuery):
     def clone(self, klass=None, memo=None, **kwargs):
         query = super(ExecutePreparedQuery, self).clone(klass=klass, memo=memo, **kwargs)
         query.prepare_params_values = self.prepare_params_values
+        query._compiler = self._compiler
         return query
 
+    def setup_metadata(self, using):
+        self.get_compiler(using).pre_sql_setup()
+
     def get_compiler(self, using=None, connection=None):
+        if hasattr(self, '_compiler'):
+            return self._compiler
         if using is None and connection is None:  # pragma: no cover
             raise ValueError("Need either using or connection")
         if using:
             connection = connections[using]
-        return ExecutePreparedSQLCompiler(self, connection, using)
+        self._compiler = ExecutePreparedSQLCompiler(self, connection, using)
+        return self._compiler
+
+    def set_prepare_params_values(self, values):
+        self.prepare_params_values = values

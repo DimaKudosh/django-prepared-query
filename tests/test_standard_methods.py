@@ -8,6 +8,9 @@ class PreparedStatementsTestCase(TestCase):
     def setUp(self):
         self.prepared_qs = Author.objects.prepare()
 
+    def test_all_on_prepared_statement(self):
+        self.assertIs(self.prepared_qs, self.prepared_qs.all())
+
     def test_prepare_queryset_representation(self):
         representation = repr(self.prepared_qs)
         self.assertTrue(representation.startswith('PreparedQuerySet'))

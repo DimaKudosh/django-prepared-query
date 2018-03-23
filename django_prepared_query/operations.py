@@ -82,15 +82,15 @@ class SqLitePreparedOperations(PreparedOperations):
 
 class PreparedOperationsFactory:
     MAPPING = {
-        'postgresql': PostgresqlPreparedOperations,
-        'mysql': MySqlPreparedOperations,
-        'sqlite': SqLitePreparedOperations,
-        'oracle': OraclePreparedOperations,
+        'postgresql': PostgresqlPreparedOperations(),
+        'mysql': MySqlPreparedOperations(),
+        'sqlite': SqLitePreparedOperations(),
+        'oracle': OraclePreparedOperations(),
     }
 
     @classmethod
     def create(cls, vendor):
         operations_class = cls.MAPPING.get(vendor)
-        if not vendor:
-            raise ImproperlyConfigured('Incorrect vendor name for prepared operations')
-        return operations_class()
+        if operations_class:
+            return operations_class
+        raise ImproperlyConfigured('Incorrect vendor name for prepared operations')
