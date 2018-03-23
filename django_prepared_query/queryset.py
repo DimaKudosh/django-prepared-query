@@ -22,7 +22,6 @@ class PreparedQuerySet(QuerySet):
             self.query = PrepareQuery(self.model)
         self._prepare_query = None
         self.prepared = False
-        self.prepare_placeholders = []
 
     def __repr__(self):
         if self.prepared:

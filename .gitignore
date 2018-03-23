@@ -8,3 +8,6 @@ docs/build
 .mypy_cache
 django_prepared_query.egg-info
 MANIFEST
+setup.cfg
+django_prepared_query/dist
+demo/.ipynb_checkpoints
