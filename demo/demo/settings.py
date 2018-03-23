@@ -79,15 +79,20 @@ WSGI_APPLICATION = 'demo.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
+try:
+    CONN_MAX_AGE = int(os.environ.get('CONN_MAX_AGE'))
+except TypeError:
+    CONN_MAX_AGE = None
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASS'),
+        'NAME': os.environ.get('POSTGRES_DB'),
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
         'HOST': os.environ.get('DB_SERVICE'),
         'PORT': os.environ.get('DB_PORT'),
-        'CONN_MAX_AGE': None,
+        'CONN_MAX_AGE': CONN_MAX_AGE,
     }
 }
 

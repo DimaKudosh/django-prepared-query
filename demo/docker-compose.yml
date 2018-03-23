@@ -11,11 +11,26 @@ services:
       - "8000:8000"
     links:
       - postgres:postgres
+      - pgbouncer:pgbouncer
+    depends_on:
+      - pgbouncer
 
   postgres:
     restart: always
-    image: postgres:latest
+    env_file: configs/env
+    image: postgres:10
     expose:
       - "5432"
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
+
+  pgbouncer:
+    restart: always
+    image: brainsam/pgbouncer:latest
+    expose:
+      - "6432"
+    links:
+      - postgres:postgres
+    env_file: configs/pgbouncer_env
+    depends_on:
+      - postgres
