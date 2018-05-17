@@ -5,7 +5,7 @@ from django.db import connections
 from django.db.models.lookups import IsNull, In
 from django.core.exceptions import ValidationError
 from .query import PrepareQuery, ExecutePreparedQuery
-from .params import BindParam
+from .params import BindParam, BindArray
 from .utils import get_where_nodes
 from .exceptions import PreparedStatementException, QueryNotPrepared, IncorrectBindParameter, \
     OperationOnPreparedStatement, NotSupportedLookup
@@ -94,9 +94,11 @@ class PreparedQuerySet(QuerySet):
             for expression in expressions_list:
                 if not isinstance(expression, BindParam):
                     continue
-                if type(filter_param) in [IsNull, In]:
+                if type(filter_param) == IsNull:
                     raise NotSupportedLookup(
                         '%s lookup isn\'t supported in prepared statements' % filter_param.lookup_name)
+                if type(filter_param) == In and not isinstance(expression, BindArray):
+                    raise PreparedStatementException('Use BindArray instead of BindParam for in lookup.')
                 if is_inner_query:
                     self.query.add_prepare_param(expression)
                     prepare_param = expression
@@ -132,15 +134,15 @@ class PreparedQuerySet(QuerySet):
         for prepare_param in self.query.prepare_params_by_hash.values():
             field = prepare_param.field_type
             name = prepare_param.name
-            param = params.get(name)
-            if isinstance(param, Model):
-                param = param._get_pk_val()
+            passed_param = params.get(name)
             try:
-                param = field.get_prep_value(param)
+                passed_param = prepare_param.clean(passed_param)
+            except ValidationError as e:
+                raise e
             except:
-                raise ValidationError('%s is incorrect type for %s parameter' % (param, name))
-            field.run_validators(param)
-            params[name] = param
+                raise ValidationError('%s is incorrect type for %s parameter' % (passed_param, name))
+            field.run_validators(passed_param)
+            params[name] = passed_param
         return params
 
     def execute_iterator(self, **params):

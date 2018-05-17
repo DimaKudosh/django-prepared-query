@@ -29,7 +29,9 @@ class PrepareSQLCompiler(SQLCompiler):
                     field = BigIntegerField()
                 elif isinstance(field, AutoField):
                     field = IntegerField()
-                arguments.append(field.db_type(self.connection))
+                db_type = field.db_type(self.connection)
+                for _ in range(prepare_param.size):
+                    arguments.append(db_type)
                 prepare_params_ordered.append(prepare_param_hash)
                 break
             else:
@@ -59,8 +61,12 @@ class ExecutePreparedSQLCompiler(SQLCompiler):
         prepare_params_values = self.query.prepare_params_values
         params = []
         for param_hash in self.query.prepare_params_order:
-            name = self.query.prepare_params_by_hash[param_hash].name
-            params.append(prepare_params_values[name])
+            prepare_param = self.query.prepare_params_by_hash[param_hash]
+            values = prepare_params_values[prepare_param.name]
+            if prepare_param.size > 1:
+                params.extend(values)
+            else:
+                params.append(values)
         return params
 
     def as_sql(self, with_limits=True, with_col_aliases=False):

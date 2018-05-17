@@ -1,7 +1,8 @@
 from datetime import datetime, date, time
 from django.test import TestCase
+from django.core.exceptions import ValidationError
 from test_app.models import Author
-from django_prepared_query import BindParam, NotSupportedLookup
+from django_prepared_query import BindParam, BindArray, NotSupportedLookup, PreparedStatementException
 
 
 class PreparedStatementsTestCase(TestCase):
@@ -165,8 +166,16 @@ class PreparedStatementsTestCase(TestCase):
         self.assertListEqual(qs.execute(regex=regex), result)
 
     def test_in_lookup(self):
-        with self.assertRaises(NotSupportedLookup):
-            Author.objects.filter(id__in=BindParam('ids')).prepare()
+        ids = [1, 3]
+        with self.assertRaises(PreparedStatementException):
+            qs = Author.objects.filter(id__in=BindParam('ids')).prepare()
+        qs = Author.objects.filter(id__in=BindArray('ids', len(ids))).prepare()
+        self.assertEqual(qs.execute(ids=[]), [])
+        self.assertEqual(qs.execute(ids=ids[:1]), list(Author.objects.filter(id__in=ids[:1])))
+        self.assertEqual(qs.execute(ids=ids), list(Author.objects.filter(id__in=ids)))
+        with self.assertRaises(ValidationError):
+            ids.append(5)
+            qs.execute(ids=ids)
 
     def test_isnull_lookup(self):
         with self.assertRaises(NotSupportedLookup):
