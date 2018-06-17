@@ -25,6 +25,7 @@ Documentation is available here http://django-prepared-query.readthedocs.io/en/l
 [Here](https://github.com/DimaKudosh/django-prepared-query/blob/master/demo/benchmark.ipynb) you can find notebook with benchmark.
 
 ## Goals
-* Add support for in lookup.
-* Add support for limit/offset.
+* ~~Add support for in lookup.~~
+* ~~Add support for limit/offset.~~
+* Make this working without specifying BindParams.
 * Add support for INSERT/UPDATE sql queries.
