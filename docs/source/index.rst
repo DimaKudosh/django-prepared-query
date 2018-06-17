@@ -54,7 +54,7 @@ Parameter name will be used in execute method. Passing incorrect parameter name 
     qs = Book.objects.filter(name=BindParam('book_name')).prepare()
     result = qs.execute(book_name='Harry Potter')
 
-Also you can use different built-in lookups except `isnull` and `in` that raises `NotSupportedLookup` exception.
+Also you can use different built-in lookups except `isnull` that raises `NotSupportedLookup` exception.
 
 .. code-block:: python
 
@@ -65,6 +65,25 @@ Also you can use different built-in lookups except `isnull` and `in` that raises
     result = qs.execute_iterator(book_name='Harry Potter')  # Returns iterator
 
 Before running execute query django_prepared_query validates input parameter types, `ValidationError` will be raised in cases when parameter type isn't matched.
+
+`BindParam` can be used in queryset slicing as well.
+
+.. code-block:: python
+
+   qs = Book.objects.all()[BindParam('start'):BindParam('end')].prepare()
+   result = qs.execute(start=0, end=20)
+
+Also you can create prepared quires with in lookup.
+For this you should use `BindArray` expression instead of `BindParam`. `BindArray` accepts additional parameter size, so you can use only arrays with specified size or smaller.
+In cases when you pass smaller array to `BindArray` expression, it will fill remaining positions with `NULL` that will pe optimized by database.
+
+.. code-block:: python
+
+   from django_prepared_query import BindArray
+
+   qs = Book.objects.filter(id__in=BindArray('ids', 10)).prepare()
+   result = qs.execute(ids=list(range(10)))
+
 
 Contributing
 ------------
