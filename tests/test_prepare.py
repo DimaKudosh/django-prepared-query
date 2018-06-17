@@ -145,3 +145,21 @@ class PreparedStatementsTestCase(TestCase):
         author = next(authors_iterator)
         with self.assertRaises(StopIteration):
             next(authors_iterator)
+
+    def test_limit_offset(self):
+        prepared_qs = Author.objects.all()[BindParam('start'):BindParam('end')].prepare()
+        qs = Author.objects.all()[0:5]
+        self.assertListEqual(prepared_qs.execute(start=0, end=5), list(qs))
+        prepared_qs = Author.objects.all()[1:BindParam('end')].prepare()
+        qs = Author.objects.all()[1:2]
+        self.assertListEqual(prepared_qs.execute(end=2), list(qs))
+        prepared_qs = Author.objects.all()[BindParam('start'):2].prepare()
+        self.assertListEqual(prepared_qs.execute(start=1), list(qs))
+        qs = Author.objects.all()[:2]
+        prepared_qs = Author.objects.all()[:BindParam('end')].prepare()
+        self.assertListEqual(prepared_qs.execute(end=2), list(qs))
+        qs = Author.objects.all()[2:]
+        prepared_qs = Author.objects.all()[BindParam('start'):].prepare()
+        self.assertListEqual(prepared_qs.execute(start=2), list(qs))
+        with self.assertRaises(PreparedStatementException):
+            Author.objects.all()[::BindParam('step')].prepare()

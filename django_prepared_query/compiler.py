@@ -2,6 +2,7 @@ from hashlib import md5
 from django.db.models.sql.compiler import SQLCompiler
 from django.db.models import AutoField, BigAutoField, IntegerField, BigIntegerField
 from .operations import PreparedOperationsFactory
+from .params import BindParam
 
 
 class PrepareSQLCompiler(SQLCompiler):
@@ -11,6 +12,31 @@ class PrepareSQLCompiler(SQLCompiler):
         name = '%s_%s' % (model_name, sql_hash)
         self.query.prepare_statement_name = name
         return name
+
+    def as_sql(self, with_limits=True, with_col_aliases=False):
+        """
+        Because Django expects that low_mark and high_mark are numbers and it can be BindParam
+        instead of number we temporary change limit BindParams to number, compile to sql using
+        standard Django as_sql method and then change it back to BindParams.
+        """
+        query = self.query
+        high_mark, low_mark = query.high_mark, query.low_mark
+        is_high_mark_bind_param = isinstance(high_mark, BindParam)
+        is_low_mark_bind_param = isinstance(low_mark, BindParam)
+        if is_high_mark_bind_param:
+            query.high_mark = 1 if low_mark else 0
+        if is_low_mark_bind_param:
+            query.low_mark = 1
+        result_sql, params = super(PrepareSQLCompiler, self).as_sql(with_limits, with_col_aliases)
+        params = list(params)
+        if is_high_mark_bind_param:
+            result_sql = result_sql.replace('LIMIT 0', 'LIMIT {}')
+            params.append(high_mark.hash)
+        if is_low_mark_bind_param:
+            result_sql = result_sql.replace('OFFSET 1', 'OFFSET {}')
+            params.append(low_mark.hash)
+        query.high_mark, query.low_mark = high_mark, low_mark
+        return result_sql, tuple(params)
 
     def prepare_sql(self):
         if self.query.prepare_statement_sql:

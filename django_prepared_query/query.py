@@ -2,6 +2,7 @@ from django import get_version
 from django.db import connections
 from django.db.models.sql.query import Query
 from .compiler import PrepareSQLCompiler, ExecutePreparedSQLCompiler
+from .params import BindParam
 from .exceptions import IncorrectBindParameter
 
 
@@ -64,6 +65,20 @@ class PrepareQuery(Query):
             connection = connections[using]
         return PrepareSQLCompiler(self, connection, using)
 
+    def set_limits(self, low=None, high=None):
+        is_low_bind_param = isinstance(low, BindParam)
+        is_high_bind_param = isinstance(high, BindParam)
+        if not is_low_bind_param and not is_high_bind_param:
+            return super(PrepareQuery, self).set_limits(low, high)
+        if is_low_bind_param:
+            low.resolve_expression(self)
+        if is_high_bind_param:
+            high.resolve_expression(self)
+        if high:
+            self.high_mark = high
+        if low:
+            self.low_mark = low
+
 
 class ExecutePreparedQuery(PrepareQuery):
     def __init__(self, *args, **kwargs):  # pragma: no cover
@@ -90,4 +105,8 @@ class ExecutePreparedQuery(PrepareQuery):
         return self._compiler
 
     def set_prepare_params_values(self, values):
-        self.prepare_params_values = values
+        param_values = {}
+        for param in self.prepare_params_by_hash.values():
+            param_name = param.name
+            param_values[param_name] = param.normalize_value(values[param_name], values)
+        self.prepare_params_values = param_values

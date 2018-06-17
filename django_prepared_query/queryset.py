@@ -1,6 +1,6 @@
 from collections import Sequence
 from django import get_version
-from django.db.models import QuerySet, Model
+from django.db.models import QuerySet, BigIntegerField
 from django.db import connections
 from django.db.models.lookups import IsNull, In
 from django.core.exceptions import ValidationError
@@ -42,9 +42,22 @@ class PreparedQuerySet(QuerySet):
         self._check_prepared('PreparedQuerySet can\'t be fetched without calling execute method')
         return super(PreparedQuerySet, self).__bool__()  # pragma: no cover
 
-    def __getitem__(self, item):
+    def __getitem__(self, k):
         self._check_prepared('PreparedQuerySet can\'t be fetched without calling execute method')
-        return super(PreparedQuerySet, self).__getitem__(item)  # pragma: no cover
+        if isinstance(k, slice) and ((k.start is None or isinstance(k.start, (BindParam, int))) or
+            (k.stop is None or isinstance(k.stop, (BindParam, int)))):
+            if k.step:
+                raise PreparedStatementException('Step isn\'t supported!')
+            if isinstance(k.start, BindParam):
+                k.start.field_type = BigIntegerField()
+            if isinstance(k.stop, BindParam):
+                k.stop.field_type = BigIntegerField()
+                k.stop.set_normalize_func(
+                    lambda v, values: v - (values.get(k.start.name) if isinstance(k.start, BindParam) else k.start or 0))
+            qs = self._chain()
+            qs.query.set_limits(k.start, k.stop)
+            return qs
+        return super(PreparedQuerySet, self).__getitem__(k)  # pragma: no cover
 
     def __and__(self, other):
         self._check_prepared('AND not allowed on prepared statement')

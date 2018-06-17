@@ -15,6 +15,7 @@ class BindParam(Expression):
                 self.field_type.max_length = 256
         self.hash = '%032x' % random.getrandbits(128)
         self.size = 1
+        self.normalize_func = None
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, self.name)
@@ -34,6 +35,14 @@ class BindParam(Expression):
         if isinstance(value, Model):
             value = value._get_pk_val()
         return self.field_type.get_prep_value(value)
+
+    def set_normalize_func(self, func):
+        self.normalize_func = func
+
+    def normalize_value(self, value, all_values):
+        if self.normalize_func:
+            return self.normalize_func(value, all_values)
+        return value
 
 
 class BindArray(BindParam):
