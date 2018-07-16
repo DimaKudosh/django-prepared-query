@@ -24,13 +24,13 @@ class PrepareSQLCompiler(SQLCompiler):
         is_high_mark_bind_param = isinstance(high_mark, BindParam)
         is_low_mark_bind_param = isinstance(low_mark, BindParam)
         if is_high_mark_bind_param:
-            query.high_mark = 1 if low_mark else 0
+            query.high_mark = 2 if low_mark else 1
         if is_low_mark_bind_param:
             query.low_mark = 1
         result_sql, params = super(PrepareSQLCompiler, self).as_sql(with_limits, with_col_aliases)
         params = list(params)
         if is_high_mark_bind_param:
-            result_sql = result_sql.replace('LIMIT 0', 'LIMIT {}')
+            result_sql = result_sql.replace('LIMIT 1', 'LIMIT {}')
             params.append(high_mark.hash)
         if is_low_mark_bind_param:
             result_sql = result_sql.replace('OFFSET 1', 'OFFSET {}')

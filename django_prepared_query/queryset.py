@@ -54,7 +54,7 @@ class PreparedQuerySet(QuerySet):
                 k.stop.field_type = BigIntegerField()
                 k.stop.set_normalize_func(
                     lambda v, values: v - (values.get(k.start.name) if isinstance(k.start, BindParam) else k.start or 0))
-            qs = self._chain()
+            qs = self.all()
             qs.query.set_limits(k.start, k.stop)
             return qs
         return super(PreparedQuerySet, self).__getitem__(k)  # pragma: no cover
